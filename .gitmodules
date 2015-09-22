@@ -1,10 +1,7 @@
-
-# once cjdns moves to a more moden stable release of libuv
-# we should change the URL to https://github.com/libuv/libuv.git
 [submodule "libuv"]
 	path = node_build/dependencies/libuv
-	url = https://github.com/da2ce7/libuv.git
-	branch = cjdns
+	url = https://github.com/libuv/libuv.git 
+	branch = v1.x
 
 [submodule "gyp"]
 	path = node_build/dependencies/gyp
