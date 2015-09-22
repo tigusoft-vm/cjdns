@@ -160,6 +160,7 @@ cd "$(dirname $0)" \
     || die 'failed to set directory'
     
 # initialize git submodules
+git submodule sync
 git submodule update --init --recursive \
     || die "failed to initialize git submodules, please install git"
     # TODO, download and extract submodules such as:
