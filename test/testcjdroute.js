@@ -60,7 +60,7 @@ var generate = module.exports.generate = function (file, builder, callback)
         tests.forEach(function (test) {
             var main = /^.*\/([^\/]+)\.c$/.exec(test)[1] + '_main';
             (builder.config['cflags'+test] =
-                builder.config['cflags'+test] || []).push('-D', 'main='+main);
+                builder.config['cflags'+test] || []).push(builder.config.flag.define + 'main='+main);
             file.links.push(test);
             listContent.push('{ .func = '+main+', .name = "'+test.replace(/^.*\/|.c$/g, '')+'" },');
             prototypes.push('int '+main+'(int argc, char** argv);');

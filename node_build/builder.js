@@ -345,12 +345,11 @@ var getFlags = function (state, fileName, includeDirs) {
 
     if (includeDirs) {
         for (var i = 0; i < state.includeDirs.length; i++) {
-            if (flags[flags.indexOf(state.includeDirs[i])-1] === '-I') {
-                continue;
+            if (flags.indexOf(state.includeDirs[i]) === -1) {
+                flags.push(state.flag.include + state.includeDirs[i]);
+            } else {
+                flags[flags.indexOf(state.includeDirs[i])] = state.flag.include + state.includeDirs[i];
             }
-
-            flags.push('-I');
-            flags.push(state.includeDirs[i]);
         }
     }
 
@@ -398,7 +397,7 @@ var compileFile = function (fileName, builder, tempDir, callback)
 
         (function () {
             //debug("CPP -MM");
-            var flags = ['-E', '-MM'];
+            var flags = [state.flag.precompileOnly, state.flag.showIncludes];
             flags.push.apply(flags, getFlags(state, fileName, true));
             flags.push(fileName);
 
@@ -425,7 +424,7 @@ var compileFile = function (fileName, builder, tempDir, callback)
 
         (function () {
             //debug("CPP");
-            var flags = ['-E'];
+            var flags = [state.flag.precompileOnly];
             flags.push.apply(flags, getFlags(state, fileName, true));
             flags.push(fileName);
 
@@ -470,7 +469,7 @@ var compileFile = function (fileName, builder, tempDir, callback)
     }).nThen(function (waitFor) {
 
         //debug("CC");
-        var flags = ['-c', '-x', 'cpp-output', '-o', outFile];
+        var flags = [state.flag.compileOnly, state.flag.languageCppOutput, state.flag.output + outFile];
         flags.push.apply(flags, getFlags(state, fileName, false));
         flags.push(preprocessed);
 
@@ -706,7 +705,7 @@ var compile = function (file, outputFile, builder, callback) {
             linkOrder[i] = state.buildDir + '/' + getObjectFile(linkOrder[i]);
         }
 
-        var ldArgs = [state.ldflags, '-o', outputFile, linkOrder, state.libs];
+        var ldArgs = [state.ldflags, state.flag.output + outputFile, linkOrder, state.libs];
         debug('\033[1;31mLinking C executable ' + file + '\033[0m');
 
         cc(state.gcc, ldArgs, waitFor(function (err, ret) {

@@ -49,37 +49,59 @@ Builder.configure({
     optimizeLevel:  '-O3',
     logLevel:       process.env['Log_LEVEL'] || 'DEBUG'
 }, function (builder, waitFor) {
+    
+    builder.config.flag = {};
+
+    builder.config.flag.precompileOnly = '-E';
+    builder.config.flag.showIncludes = '-MM';
+    builder.config.flag.define = '-D';
+    builder.config.flag.output = '-o';
+    builder.config.flag.compileOnly = '-c';
+    builder.config.flag.include = '-I';
+    builder.config.flag.optimizeLevel = '-O3';
+    builder.config.flag.languageC = '-xc';
+    builder.config.flag.languageCppOutput = '-xcpp-output';
+    builder.config.flag.retainSymbolInfo = '-g';
+    builder.config.flag.lto = '-flto';
+    builder.config.flag.pic = '-fPIC';
+    
+    // c version
     builder.config.cflags.push(
-        '-std=c99',
+        '-std=c99'
+    );
+    
+    // warnings
+    builder.config.cflags.push(
+        '-pedantic',
         '-Wall',
         '-Wextra',
         '-Werror',
         '-Wno-pointer-sign',
-        '-pedantic',
-        '-D', builder.config.systemName + '=1',
-        '-Wno-unused-parameter',
-        '-fomit-frame-pointer',
-
-        '-D', 'Log_' + builder.config.logLevel,
-
-        '-g',
+        '-Wno-unused-parameter'
+    );
+    
+    // defines
+    builder.config.cflags.push(
+        builder.config.flag.define + builder.config.systemName + '=1',
+        builder.config.flag.define + 'Log_' + builder.config.logLevel,
 
         // f4 = 16 peers max, fixed width 4 bit
         // f8 = 241 peers max, fixed width 8 bit
         // v3x5x8 = 256 peers max, variable width, 3, 5 or 8 bits plus 1 or 2 bits of prefix
         // v4x8 = 256 peers max, variable width, 4, or 8 bits plus 1 bit prefix
-        '-D', 'NumberCompress_TYPE=v3x5x8',
+        builder.config.flag.define + 'NumberCompress_TYPE=v3x5x8',
 
         // enable for safety (don't worry about speed, profiling shows they add ~nothing)
-        '-D', 'Identity_CHECK=1',
-        '-D', 'Allocator_USE_CANARIES=1',
-        '-D', 'PARANOIA=1'
+        builder.config.flag.define + 'Identity_CHECK=1',
+        builder.config.flag.define + 'Allocator_USE_CANARIES=1',
+        builder.config.flag.define + 'PARANOIA=1'
     );
+
 
     var android = /android/i.test(builder.config.gcc);
 
     if (process.env['TESTING']) {
-        builder.config.cflags.push('-D', 'TESTING=1');
+        builder.config.cflags.push(builder.config.flag.define + 'TESTING=1');
     }
 
     if (!builder.config.crossCompiling) {
@@ -158,12 +180,12 @@ Builder.configure({
 
     CanCompile.check(builder,
                      'int main() { return 0; }',
-                     [ builder.config.cflags, '-flto', '-x', 'c' ],
+                     [ builder.config.cflags, builder.config.flag.lto, builder.config.flag.languageC ],
                      function (err, can) {
         if (can) {
             console.log("Compiler supports link time optimization");
             builder.config.ldflags.push(
-                '-flto',
+                builder.config.flag.lto,
                 builder.config.optimizeLevel
             );
         } else {
@@ -213,7 +235,7 @@ Builder.configure({
 
     if (process.env['Pipe_PREFIX'] !== undefined) {
         builder.config.cflags.push(
-            '-D', 'Pipe_PREFIX="' + process.env['Pipe_PREFIX'] + '"'
+            builder.config.flag.define + 'Pipe_PREFIX="' + process.env['Pipe_PREFIX'] + '"'
         );
     }
 
