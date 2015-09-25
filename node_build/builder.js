@@ -76,12 +76,19 @@ var compiler = function (compilerPath, args, callback, content) {
     args = expandArgs(args);
     sema.take(function (returnAfter) {
         var gcc = Spawn(compilerPath, args);
+        var cmd = compilerPath + ' ' + args.join(' ');
+
         var err = '';
         var out = '';
-
+    
         gcc.stdout.on('data', function (dat) { out += dat.toString(); });
         gcc.stderr.on('data', function (dat) { err += dat.toString(); });
+
         gcc.on('close', returnAfter(function (ret) {
+            // for some reason with cl.exe ?? Why?
+            if (compilerPath === 'cl' && ret !== 0) {
+                err = [out, out = err][0]; //swap
+            }
             callback(ret, out, err);
         }));
 
@@ -112,7 +119,7 @@ var compiler = function (compilerPath, args, callback, content) {
 var cc = function (gcc, args, callback, content) {
     compiler(gcc, args, function (ret, out, err) {
         if (ret) {
-            callback(error("gcc " + args.join(' ') + "\n\n" + err));
+            callback(error(gcc + " " + args.join(' ') + "\n\n" + err + out));
         }
 
         if (err !== '') {
@@ -132,6 +139,9 @@ var mkBuilder = function (state) {
     var builder = {
         cc: function (args, callback) {
             compiler(builder.config.gcc, args, callback);
+        },
+        aa: function (args, callback) {
+            compiler(builder.config.asm, args, callback);
         },
 
         buildExecutable: function (cFile, outputFile) {
@@ -469,7 +479,7 @@ var compileFile = function (fileName, builder, tempDir, callback)
     }).nThen(function (waitFor) {
 
         //debug("CC");
-        var flags = [state.flag.compileOnly, state.flag.languageCppOutput, state.flag.output + outFile];
+        var flags = [state.flag.compileOnly, state.flag.languageCppOutput, state.flag.outputObj + outFile];
         flags.push.apply(flags, getFlags(state, fileName, false));
         flags.push(preprocessed);
 
@@ -705,7 +715,7 @@ var compile = function (file, outputFile, builder, callback) {
             linkOrder[i] = state.buildDir + '/' + getObjectFile(linkOrder[i]);
         }
 
-        var ldArgs = [state.ldflags, state.flag.output + outputFile, linkOrder, state.libs];
+        var ldArgs = [state.ldflags, state.flag.outputExe + outputFile, linkOrder, state.libs];
         debug('\033[1;31mLinking C executable ' + file + '\033[0m');
 
         cc(state.gcc, ldArgs, waitFor(function (err, ret) {

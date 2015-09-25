@@ -4,6 +4,7 @@ var Fs = require("fs");
 module.exports.check = function (builder, func, ldflags, callback) {
 
     var file = builder.tmpFile();
+    var objectFile = builder.tmpFile();
     var outputFile = builder.tmpFile();
 
     nThen(function (waitFor) {
@@ -18,7 +19,13 @@ module.exports.check = function (builder, func, ldflags, callback) {
     }).nThen(function (waitFor) {
 
         var flags = [];
-        flags.push.apply(flags, ["-x", "c", "-o", outputFile, file]);
+        
+        // create a random object file
+        if (builder.config.gcc === 'cl') {
+            flags.push(builder.config.flag.outputObj + objectFile)
+        }
+
+        flags.push(builder.config.flag.languageC, builder.config.flag.outputExe + outputFile, file);
         flags.push.apply(flags, ldflags);
 
         builder.cc(flags, waitFor(function (ret, out, err) {

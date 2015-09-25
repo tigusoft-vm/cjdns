@@ -7,33 +7,15 @@ var TestRunner = require('./TestRunner');
 var RandomBytes = require('./RandomBytes');
 var Common = require('./Common');
 
-// on BSD and iphone systems, os.cpus() is not reliable so if it
-// returns undefined let's just assume 1
-var WORKERS = Math.floor((typeof Os.cpus() == 'undefined' ? 1 : Os.cpus().length));
-
-var GCC = process.env['CC'] || 'gcc';
+var SYSTEM = process.env['SYSTEM'] || process.platform;
 var AR = process.env['AR'] || 'ar';
-var RANLIB = process.env['RANLIB'] || 'ranlib';
 
-var cc = function(args, onComplete, noArg) {
-  if (noArg) { throw new Error(); }
-  cflags = process.env['CFLAGS'];
-  if (cflags) {
-    flags = cflags.split(' ');
-    flags.forEach(function(flag) {
-      args.push(flag);
-    });
-  }
-  var gcc = Spawn(GCC, args);
-  var err = '';
-  gcc.stderr.on('data', function(dat) { err += dat.toString() ; });
-  gcc.on('error', function(err) {
-    // handle the error safely
-    console.log(args);
-    console.log(err);
-  });
-  gcc.on('close', function(ret) { onComplete(ret, err); });
-};
+if (SYSTEM === 'win32') {
+    var ENV = process.env;
+    if (ENV.hasOwnProperty('VisualStudioVersion')) {
+        AR = 'lib';
+    }
+}
 
 var ar = function(args, onComplete) {
   var ar = Spawn(AR, args);
@@ -46,20 +28,6 @@ var ar = function(args, onComplete) {
     console.log(err);
   });
   ar.on('close', function(ret) {
-    onComplete(ret, out);
-  });
-};
-
-var ranlib = function(args, onComplete) {
-  var rl = Spawn(RANLIB, args);
-  var out = '';
-  rl.stderr.on('data', function(dat) { out += dat.toString(); });
-  rl.on('error', function(err) {
-    // handle the error safely
-    console.log(args);
-    console.log(err);
-  });
-  rl.on('close', function(ret) {
     onComplete(ret, out);
   });
 };
@@ -109,14 +77,14 @@ var writeTypesHeaders = function(plan, onComplete) {
   });
 };
 
-var runTests = function(cc, plan, onComplete) {
-  TestRunner.run(cc, plan, onComplete);
+var runTests = function(cc, config, plan, onComplete) {
+  TestRunner.run(cc, config, plan, onComplete);
 };
 
-var beginBuild = function(compiler, plan, callback) {
+var beginBuild = function(compiler, config, plan, callback) {
   console.log('beginning build');
-  PlanRunner.run(plan, compiler, ar, ranlib, function() {
-    runTests(compiler, plan, function() {
+  PlanRunner.run(plan, compiler, config, ar, AR, function() {
+    runTests(compiler, config, plan, function() {
         console.log('done');
         callback();
     });
@@ -127,13 +95,13 @@ var main = module.exports.build = function(compiler, config, callback) {
   console.log("Creating directories");
   Common.init();
 
-  RandomBytes.run(compiler, function() {
+  RandomBytes.run(compiler, config, function() {
     console.log("Getting system type");
-    AbiName.get(compiler, function(abiName) {
+    AbiName.get(compiler, config, function(abiName) {
       console.log('System is [' + abiName + ']');
       var plan = getPlan(abiName, config);
       writeTypesHeaders(plan, function() {
-          beginBuild(compiler, plan, callback);
+          beginBuild(compiler, config, plan, callback);
       });
     });
   });

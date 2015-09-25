@@ -1,16 +1,21 @@
 #if defined(__amd64__) || defined(__x86_64__) || defined(__AMD64__) || defined(_M_X64) || defined(__amd64)
-   #ifdef __AVX__
+   #if defined(_MSC_VER)
+       #error ABI_IS_amd64_ref__
+   #elif defined (__AVX__)
        #error ABI_IS_amd64_AVX__
    #else
        #error ABI_IS_amd64__
    #endif
 #elif defined(__i386__) || defined(__x86__) || defined(__X86__) || defined(_M_IX86) || defined(__i386)
-   #if defined(__AVX__)
+   #if defined(_MSC_VER)
+       #error ABI_IS_x86_ref__
+   #elif defined(__AVX__)
        #error ABI_IS_x86_AVX__
    #elif defined(__SSE2__)
        #error ABI_IS_x86_SSE2__
    #else
        #error ABI_IS_x86__
+#endif
    #endif
 #elif defined(__ia64__) || defined(__IA64__) || defined(__M_IA64)
    #error ABI_IS_ia64__

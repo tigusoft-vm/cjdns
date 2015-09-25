@@ -17,8 +17,8 @@ var Fs = require("fs");
 
 module.exports.check = function (builder, code, cflags, callback) {
 
-    var file = builder.tmpFile();
-    var outputFile = builder.tmpFile();
+    var file = builder.tmpFile() + '.c';
+    var outputFile = builder.tmpFile() + '.o';
 
     nThen(function (waitFor) {
 
@@ -33,9 +33,10 @@ module.exports.check = function (builder, code, cflags, callback) {
 
         var flags = [];
         flags.push.apply(flags, cflags);
-        flags.push.apply(flags, ["-o", outputFile, file]);
 
-        builder.cc([cflags, "-o", outputFile, file], waitFor(function (ret, out, err) {
+        flags.push(builder.config.flag.compileOnly, builder.config.flag.outputObj + outputFile, file);
+
+        builder.cc(flags, waitFor(function (ret, out, err) {
             if (ret) {
                 callback(err, false);
             } else {

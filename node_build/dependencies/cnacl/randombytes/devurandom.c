@@ -1,7 +1,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include <io.h>
+#endif
+
 
 /* it's really stupid that there isn't a syscall for this */
 

@@ -1,3 +1,4 @@
+var Os = require('os');
 var Fs = require('fs');
 var Spawn = require('child_process').spawn;
 var JobQueue = require('./JobQueue');
@@ -5,17 +6,27 @@ var Common = require('./Common');
 
 var BUILD_DIR = 'jsbuild';
 var OBJ_DIR = BUILD_DIR + '/objects_internal';
-var WORKERS = 4;
 
-var getCompiler = function(cc) {
+var cpus = Os.cpus(); // workaround, nodejs seems to be broken on openbsd (undefined result after second call)
+var PROCESSORS = Math.floor((typeof cpus === 'undefined' ? 1 : cpus.length) * 1.25);
+
+var getCompiler = function(cc, config) {
   return function(compileCall, onComplete) {
     console.log('\033[2;32mCompiling Test ' + compileCall.outFile + '\033[0m');
     /*console.log('cc -o ' + compileCall.outFile + ' -c ' + compileCall.inFile + ' ' +
                   compileCall.args.join(' ')); */
     var args = [];
     args.push.apply(args, compileCall.args);
-    args.push('-o', compileCall.outFile, compileCall.inFile);
-    args.push(BUILD_DIR + '/libnacl.a');
+    
+    if (config.gcc === 'cl') {
+      args.push(config.flag.outputObj + compileCall.outFile + '.obj');
+    }
+        
+    args.push(config.flag.outputExe + compileCall.outFile, compileCall.inFile);
+    
+    var libnaclName = (config.gcc !== 'cl') ? 'libnacl.a' : 'libnacl.lib';
+
+    args.push(BUILD_DIR + '/' + libnaclName, config.msvcLibs);
     cflags = process.env['CFLAGS'];
     if (cflags) {
       flags = cflags.split(' ');
@@ -31,7 +42,7 @@ var getCompiler = function(cc) {
   };
 };
 
-var buildQueue = function(plan, onComplete) {
+var buildQueue = function(plan, config, onComplete) {
   var workers = [0];
   var primitivesByOp = {};
   plan.PLAN_IMPLEMENTATIONS.forEach(function(opi) {
@@ -46,8 +57,8 @@ var buildQueue = function(plan, onComplete) {
       if (!test.match(/\.c$/)) { return; }
       var longName = 'tests/'+test;
       var args = [
-          '-I', Common.INCLUDE,
-          '-I', Common.INCLUDE_INTERNAL
+          config.flag.include + Common.INCLUDE,
+          config.flag.include +  Common.INCLUDE_INTERNAL
       ];
       // Search for #include <$operation> with primitive unspecified.
       // Tests like this will be run for every primitive of that operation.
@@ -113,17 +124,17 @@ var getRunner = function() {
   };
 };
 
-var compileTests = function(cc, queue, onComplete) {
-  JobQueue.run(queue, getCompiler(cc), WORKERS, onComplete);
+var compileTests = function(cc, config, queue, onComplete) {
+  JobQueue.run(queue, getCompiler(cc, config), PROCESSORS, onComplete);
 };
 
 var runTests = function(queue, onComplete) {
-  JobQueue.run(queue, getRunner(), WORKERS, onComplete);
+  JobQueue.run(queue, getRunner(), PROCESSORS, onComplete);
 };
 
-module.exports.run = function(cc, plan, onComplete) {
-  buildQueue(plan, function(queue) {
-    compileTests(cc, queue, function() {
+module.exports.run = function(cc, config, plan, onComplete) {
+  buildQueue(plan, config, function(queue) {
+    compileTests(cc, config, queue, function() {
       onComplete();
       //runTests(queue, onComplete);
     });
