@@ -46,7 +46,6 @@ Builder.configure({
     crossCompiling: process.env['CROSS'] !== undefined,
     gcc:            GCC,
     tempDir:        '/tmp',
-    optimizeLevel:  '-O3',
     logLevel:       process.env['Log_LEVEL'] || 'DEBUG'
 }, function (builder, waitFor) {
     
@@ -159,9 +158,9 @@ Builder.configure({
         cflags.forEach(function(flag) {
              if (/^\-O[^02s]$/.test(flag)) {
                 console.log("Skipping " + flag + ", assuming " +
-                            builder.config.optimizeLevel + " instead.");
+                            builder.config.flag.optimizeLevel + " instead.");
             } else if (/^\-O[02s]$/.test(flag)) {
-                builder.config.optimizeLevel = flag;
+                builder.config.flag.optimizeLevel = flag;
             } else {
                 [].push.apply(builder.config.cflags, cflags);
             }
@@ -186,12 +185,12 @@ Builder.configure({
             console.log("Compiler supports link time optimization");
             builder.config.ldflags.push(
                 builder.config.flag.lto,
-                builder.config.optimizeLevel
+                builder.config.flag.optimizeLevel
             );
         } else {
             console.log("Link time optimization not supported [" + err + "]");
         }
-        builder.config.cflags.push(builder.config.optimizeLevel);
+        builder.config.cflags.push(builder.config.flag.optimizeLevel);
     });
 
     var uclibc = process.env['UCLIBC'] == '1';
@@ -270,10 +269,10 @@ Builder.configure({
             var NaCl = require(process.cwd() + '/node_build/make.js');
             NaCl.build(function (args, callback) {
                 if (builder.config.systemName !== 'win32') {
-                    args.unshift('-fPIC');
+                    args.unshift(builder.config.flag.pic);
                 }
 
-                args.unshift(builder.config.optimizeLevel, '-fomit-frame-pointer');
+                args.unshift(builder.config.flag.optimizeLevel, '-fomit-frame-pointer');
 
                 if (CFLAGS) {
                     [].push.apply(args, CFLAGS.split(' '));
@@ -381,10 +380,10 @@ Builder.configure({
                     'CXX=' + builder.config.gcc,
                     'V=1'
                 ];
-                var cflags = [builder.config.optimizeLevel, '-DNO_EMFILE_TRICK=1'];
+                var cflags = [builder.config.flag.optimizeLevel, '-DNO_EMFILE_TRICK=1'];
 
                 if (!(/darwin|win32/i.test(builder.config.systemName))) {
-                    cflags.push('-fPIC');
+                    cflags.push(builder.config.flag.pic);
                 }
                 args.push('CFLAGS=' + cflags.join(' '));
 
