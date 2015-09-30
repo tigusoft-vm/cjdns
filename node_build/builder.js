@@ -71,26 +71,28 @@ var expandArgs = function(args) {
 };
 
 var sema = Semaphore.create(PROCESSORS);
-var compiler = function(compilerPath, args, callback, content) {
+var compiler = function(gcc, args, callback, content) {
     args = expandArgs(args);
     sema.take(function(returnAfter) {
-        var gcc = Spawn(compilerPath, args);
+        var exe = Spawn(gcc, args);
+
         var err = '';
         var out = '';
 
-        gcc.stdout.on('data', function(dat) {
+        exe.stdout.on('data', function(dat) {
             out += dat.toString();
         });
-        gcc.stderr.on('data', function(dat) {
+        exe.stderr.on('data', function(dat) {
             err += dat.toString();
         });
-        gcc.on('close', returnAfter(function(ret) {
+
+        exe.on('close', returnAfter(function(ret) {
             callback(ret, out, err);
         }));
 
-        gcc.on('error', function(err) {
+        exe.on('error', function(err) {
             if (err.code === 'ENOENT') {
-                console.error('\033[1;31mError: ' + compilerPath + ' is required!\033[0m');
+                console.error('\033[1;31mError: ' + gcc + ' is required!\033[0m');
             } else {
                 console.error(
                     '\033[1;31mFail run ' + process.cwd() + ': ' + compilerPath + ' ' + args.join(' ') + '\033[0m'
@@ -103,11 +105,11 @@ var compiler = function(compilerPath, args, callback, content) {
         });
 
         if (content) {
-            gcc.stdin.write(content, function(err) {
+            exe.stdin.write(content, function(err) {
                 if (err) {
                     throw err;
                 }
-                gcc.stdin.end();
+                exe.stdin.end();
             });
         }
     });
@@ -115,15 +117,15 @@ var compiler = function(compilerPath, args, callback, content) {
 
 var cc = function(gcc, args, callback, content) {
     compiler(gcc, args, function(ret, out, err) {
-        if (ret) {
-            callback(error("gcc " + args.join(' ') + "\n\n" + err));
+
+        if (ret !== 0) {
+            err = "Error: " + gcc + " " + args + "\n\n" + err;
+        } else {
+            ret = null;
         }
 
-        if (err !== '') {
-            debug(err);
-        }
+        callback(ret, out, err);
 
-        callback(undefined, out);
     }, content);
 };
 
@@ -149,7 +151,7 @@ var mkBuilder = function(state) {
                 outputFile += '.exe';
             }
 
-            var temp = state.buildDir + '/' + getExecutableFile(cFile);
+            var temp = state.buildDir + '/' + getExecutableFile(cFile, state);
             compile(cFile, temp, builder, builder.waitFor());
             builder.executables.push([temp, outputFile]);
 
@@ -157,7 +159,7 @@ var mkBuilder = function(state) {
         },
 
         buildTest: function(cFile) {
-            return builder.buildExecutable(cFile, state.buildDir + '/' + getExecutableFile(cFile));
+            return builder.buildExecutable(cFile, state.buildDir + '/' + getExecutableFile(cFile, state));
         },
 
         runTest: function(outFile, testRunner) {
@@ -355,12 +357,12 @@ var getFile = function() {
     };
 };
 
-var getObjectFile = function(cFile) {
-    return cFile.replace(/[^a-zA-Z0-9_-]/g, '_') + '.o';
+var getObjectFile = function(cFile, state) {
+    return cFile.replace(/[^a-zA-Z0-9_-]/g, '_') + state.ext.obj;
 };
 
-var getExecutableFile = function(cFile) {
-    return cFile.replace(/[^a-zA-Z0-9_-]/g, '_');
+var getExecutableFile = function(cFile, state) {
+    return cFile.replace(/[^a-zA-Z0-9_-]/g, '_') + state.ext.exe;
 };
 
 var getFlags = function(state, fileName, includeDirs) {
@@ -370,12 +372,11 @@ var getFlags = function(state, fileName, includeDirs) {
 
     if (includeDirs) {
         for (var i = 0; i < state.includeDirs.length; i++) {
-            if (flags[flags.indexOf(state.includeDirs[i]) - 1] === '-I') {
-                continue;
+            if (flags.indexOf(state.includeDirs[i]) === -1) {
+                flags.push(state.flag.include + state.includeDirs[i]);
+            } else {
+                flags[flags.indexOf(state.includeDirs[i])] = state.flag.include + state.includeDirs[i];
             }
-
-            flags.push('-I');
-            flags.push(state.includeDirs[i]);
         }
     }
 
@@ -413,8 +414,8 @@ var compileFile = function(fileName, builder, tempDir, callback) {
 
     //debug('\033[2;32mCompiling ' + fileName + '\033[0m');
 
-    var preprocessed = state.buildDir + '/' + getObjectFile(fileName) + '.i';
-    var outFile = state.buildDir + '/' + getObjectFile(fileName);
+    var preprocessed = state.buildDir + '/' + getObjectFile(fileName, state) + '.i';
+    var outFile = state.buildDir + '/' + getObjectFile(fileName, state);
     var fileContent;
     var fileObj = getFile();
 
@@ -422,15 +423,14 @@ var compileFile = function(fileName, builder, tempDir, callback) {
 
         (function() {
             //debug("CPP -MM");
-            var flags = ['-E', '-MM'];
+            var flags = [state.flag.precompileOnly, state.flag.showIncludes];
             flags.push.apply(flags, getFlags(state, fileName, true));
             flags.push(fileName);
 
-            cc(state.gcc, flags, waitFor(function(err, output) {
-                if (err) {
+            cc(state.gcc, flags, waitFor(function(ret, output, err) {
+                if (ret !== null) {
                     throw err;
                 }
-
                 // replace the escapes and newlines
                 output = output.replace(/ \\|\n/g, '').split(' ');
 
@@ -451,15 +451,15 @@ var compileFile = function(fileName, builder, tempDir, callback) {
 
         (function() {
             //debug("CPP");
-            var flags = ['-E'];
+            var flags = [state.flag.precompileOnly];
             flags.push.apply(flags, getFlags(state, fileName, true));
             flags.push(fileName);
 
-            cc(state.gcc, flags, waitFor(function(err, output) {
-                if (err) {
+            cc(state.gcc, flags, waitFor(function(ret, out, err) {
+                if (ret !== null) {
                     throw err;
                 }
-                fileContent = output;
+                fileContent = out;
             }));
         })();
 
@@ -510,12 +510,12 @@ var compileFile = function(fileName, builder, tempDir, callback) {
     }).nThen(function(waitFor) {
 
         //debug("CC");
-        var flags = ['-c', '-x', 'cpp-output', '-o', outFile];
+        var flags = [state.flag.compileOnly, state.flag.languageCppOutput, state.flag.outputObj + outFile];
         flags.push.apply(flags, getFlags(state, fileName, false));
-        flags.push(preprocessed);
+        flags.push(state.flag.compileAsC + preprocessed);
 
-        cc(state.gcc, flags, waitFor(function(err) {
-            if (err) {
+        cc(state.gcc, flags, waitFor(function(ret, out, err) {
+            if (ret !== null) {
                 throw err;
             }
 
@@ -748,14 +748,14 @@ var compile = function(file, outputFile, builder, callback) {
 
         var linkOrder = getLinkOrder(file, state.files);
         for (var i = 0; i < linkOrder.length; i++) {
-            linkOrder[i] = state.buildDir + '/' + getObjectFile(linkOrder[i]);
+            linkOrder[i] = state.buildDir + '/' + getObjectFile(linkOrder[i], state);
         }
 
-        var ldArgs = [state.ldflags, '-o', outputFile, linkOrder, state.libs];
+        var ldArgs = [state.ldflags, state.flag.outputExe + outputFile, linkOrder, state.libs];
         debug('\033[1;31mLinking C executable ' + file + '\033[0m');
 
-        cc(state.gcc, ldArgs, waitFor(function(err, ret) {
-            if (err) {
+        cc(state.gcc, ldArgs, waitFor(function(ret, err) {
+            if (ret !== null) {
                 throw err;
             }
         }));
