@@ -54,6 +54,12 @@ var error = function(message) {
     }
 };
 
+var throwIfErr = function(err) {
+    if (err) {
+        throw err;
+    }
+};
+
 var expandArgs = function(args) {
     var out = [];
     for (var i = 0; i < args.length; i++) {
@@ -104,9 +110,7 @@ var compiler = function(compilerPath, args, callback, content) {
 
         if (content) {
             gcc.stdin.write(content, function(err) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
                 gcc.stdin.end();
             });
         }
@@ -246,6 +250,7 @@ var execJs = function(js, builder, file, fileName, callback) {
         if (err) {
             return;
         }
+
         res = res || x || '';
         clearTimeout(to);
         process.nextTick(function() {
@@ -271,9 +276,7 @@ var preprocessBlock = function(block, builder, fileObj, fileName, callback) {
 
         nt = nt(function(waitFor) {
             preprocessBlock(elem, builder, fileObj, fileName, waitFor(function(err, ret) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
 
                 block[i] = ret;
             }));
@@ -285,11 +288,11 @@ var preprocessBlock = function(block, builder, fileObj, fileName, callback) {
         if (error) {
             return;
         }
+
         var capture = block.join('');
         execJs(capture, builder, fileObj, fileName, waitFor(function(err, ret) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
+
             callback(undefined, ret);
         }));
 
@@ -332,9 +335,7 @@ var preprocess = function(content, builder, fileObj, fileName, callback) {
 
         nt = nt(function(waitFor) {
             preprocessBlock(elem, builder, fileObj, fileName, waitFor(function(err, ret) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
 
                 elems[i] = ret;
             }));
@@ -427,9 +428,7 @@ var compileFile = function(fileName, builder, tempDir, callback) {
             flags.push(fileName);
 
             cc(state.gcc, flags, waitFor(function(err, output) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
 
                 // replace the escapes and newlines
                 output = output.replace(/ \\|\n/g, '').split(' ');
@@ -456,9 +455,7 @@ var compileFile = function(fileName, builder, tempDir, callback) {
             flags.push(fileName);
 
             cc(state.gcc, flags, waitFor(function(err, output) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
                 fileContent = output;
             }));
         })();
@@ -471,9 +468,7 @@ var compileFile = function(fileName, builder, tempDir, callback) {
             }
 
             Fs.unlink(preprocessed, waitFor(function(err) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
             }));
         }));
 
@@ -481,14 +476,10 @@ var compileFile = function(fileName, builder, tempDir, callback) {
 
         //debug("Preprocess");
         preprocess(fileContent, builder, fileObj, fileName, waitFor(function(err, output) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
 
             Fs.writeFile(preprocessed, output, waitFor(function(err) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
             }));
 
             // important, this will prevent the file from also being piped to gcc.
@@ -501,9 +492,7 @@ var compileFile = function(fileName, builder, tempDir, callback) {
             }
 
             Fs.unlink(outFile, waitFor(function(err) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
             }));
         }));
 
@@ -515,9 +504,7 @@ var compileFile = function(fileName, builder, tempDir, callback) {
         flags.push(preprocessed);
 
         cc(state.gcc, flags, waitFor(function(err) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
 
             fileObj.obj = outFile;
         }), fileContent);
@@ -735,9 +722,7 @@ var compile = function(file, outputFile, builder, callback) {
 
         tempDir = tmpFile(state);
         Fs.mkdir(tempDir, waitFor(function(err) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
         }));
 
     }).nThen(function(waitFor) {
@@ -755,23 +740,17 @@ var compile = function(file, outputFile, builder, callback) {
         debug('\033[1;31mLinking C executable ' + file + '\033[0m');
 
         cc(state.gcc, ldArgs, waitFor(function(err, ret) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
         }));
 
     }).nThen(function(waitFor) {
 
         Fs.readdir(tempDir, waitFor(function(err, files) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
 
             files.forEach(function(file) {
                 Fs.unlink(tempDir + '/' + file, waitFor(function(err) {
-                    if (err) {
-                        throw err;
-                    }
+                    throwIfErr(err);
                 }));
             });
         }));
@@ -779,9 +758,7 @@ var compile = function(file, outputFile, builder, callback) {
     }).nThen(function(waitFor) {
 
         Fs.rmdir(tempDir, waitFor(function(err) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
         }));
 
     }).nThen(function(waitFor) {
@@ -843,9 +820,7 @@ var getRebuildIfChangesHash = function(rebuildIfChanges, callback) {
 
         rebuildIfChanges.forEach(function(fileName, i) {
             Fs.readFile(fileName, waitFor(function(err, ret) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
 
                 rebIfChg[i] = ret;
             }));
@@ -871,12 +846,6 @@ process.on('exit', function() {
 var stage = function(st, builder, waitFor) {
     builder.waitFor = waitFor;
     st(builder, waitFor);
-};
-
-var throwIfErr = function(err) {
-    if (err) {
-        throw err;
-    }
 };
 
 var configure = module.exports.configure = function(params, configFunc) {
@@ -909,9 +878,7 @@ var configure = module.exports.configure = function(params, configFunc) {
             }
 
             Fs.mkdir(params.buildDir, waitFor(function(err) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
             }));
         }));
 
@@ -924,9 +891,7 @@ var configure = module.exports.configure = function(params, configFunc) {
             }
 
             Fs.readFile(params.buildDir + '/state.json', waitFor(function(err, ret) {
-                if (err) {
-                    throw err;
-                }
+                throwIfErr(err);
 
                 state = JSON.parse(ret);
             }));
@@ -1060,9 +1025,7 @@ var configure = module.exports.configure = function(params, configFunc) {
         builder.rebuiltFiles.forEach(function(fileName) {
             sema.take(waitFor(function(returnAfter) {
                 Fs.readFile(fileName, waitFor(function(err, ret) {
-                    if (err) {
-                        throw err;
-                    }
+                    throwIfErr(err);
 
                     ret = ret.toString('utf8');
                     nThen(function(waitFor) {
@@ -1122,9 +1085,7 @@ var configure = module.exports.configure = function(params, configFunc) {
         debug("Pack " + time() + "ms");
 
         getMTimes(state.files, state.mtimes, waitFor(function(err, mtimes) {
-            if (err) {
-                throw err;
-            }
+            throwIfErr(err);
 
             state.mtimes = mtimes;
             debug("Get mtimes " + time() + "ms");
