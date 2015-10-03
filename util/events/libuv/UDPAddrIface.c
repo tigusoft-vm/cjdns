@@ -271,7 +271,7 @@ struct UDPAddrIface* UDPAddrIface_new(struct EventBase* eventBase,
     ret = uv_udp_bind(&context->uvHandle, (const struct sockaddr*)native, 0);
     Log_debug(logger, "uv_udp_bind returned %d", ret);
 
-    if (ret) {
+    if ( 0 && ret ) { // tmp work around
         Except_throw(exHandler, "call to uv_udp_bind() failed [%s]",
                      uv_strerror(ret));
     }
