@@ -1,7 +1,7 @@
 [submodule "libuv"]
 	path = node_build/dependencies/libuv
-	url = https://github.com/libuv/libuv.git 
-	branch = v1.x
+	url = https://github.com/tigusoft-vm/libuv.git
+	branch = cjdns-libuv1.x
 
 [submodule "gyp"]
 	path = node_build/dependencies/gyp
