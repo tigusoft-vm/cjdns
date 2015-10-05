@@ -268,10 +268,10 @@ struct UDPAddrIface* UDPAddrIface_new(struct EventBase* eventBase,
     int ret;
     void* native = Sockaddr_asNative(addr);
 
-    ret = uv_udp_bind(&context->uvHandle, (const struct sockaddr*)native, 0);
+    ret = uv_udp_bind(&context->uvHandle, (const struct sockaddr*)native, UV_UDP_REUSEADDR);
     Log_debug(logger, "uv_udp_bind returned %d", ret);
 
-    if ( 0 && ret ) { // tmp work around
+    if (ret) {
         Except_throw(exHandler, "call to uv_udp_bind() failed [%s]",
                      uv_strerror(ret));
     }
