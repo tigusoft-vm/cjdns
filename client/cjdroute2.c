@@ -18,7 +18,7 @@
 
 
 // TODO(rfree) needed for the test
-#define _GNU_SOURCE 
+#define _GNU_SOURCE
 
 
 #include "client/AdminClient.h"
@@ -538,7 +538,7 @@ static void onCoreExit(int64_t exit_status, int term_signal)
 #endif
 #include <fcntl.h>
 #include <errno.h>
-#include <stdarg.h> 
+#include <stdarg.h>
 #include <assert.h>
 
 #ifdef WIN32
@@ -578,7 +578,7 @@ static int is_tap_win32_dev(const char *guid) {
                         KEY_READ,
                         &netcard_key);
 
-  if (status != ERROR_SUCCESS) 
+  if (status != ERROR_SUCCESS)
     return FALSE;
 
   for (;;) {
@@ -601,13 +601,13 @@ static int is_tap_win32_dev(const char *guid) {
                           NULL,
                           NULL);
 
-    if (status == ERROR_NO_MORE_ITEMS) 
+    if (status == ERROR_NO_MORE_ITEMS)
       break;
-    else if (status != ERROR_SUCCESS) 
+    else if (status != ERROR_SUCCESS)
       return FALSE;
 
-    _snprintf (unit_string, 
-               sizeof(unit_string), 
+    _snprintf (unit_string,
+               sizeof(unit_string),
                "%s\\%s",
                 ADAPTER_KEY,
                 enum_name);
@@ -618,7 +618,7 @@ static int is_tap_win32_dev(const char *guid) {
                           KEY_READ,
                           &unit_key);
 
-    if (status != ERROR_SUCCESS) 
+    if (status != ERROR_SUCCESS)
       return FALSE;
     else {
       len = sizeof (component_id);
@@ -666,10 +666,10 @@ static int get_device_guid(char *name,
   int stop = 0;
   int i;
 
-  status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
-                        NETWORK_CONNECTIONS_KEY, 
-                        0, 
-                        KEY_READ, 
+  status = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+                        NETWORK_CONNECTIONS_KEY,
+                        0,
+                        KEY_READ,
                         &control_net_key);
 
   if (status != ERROR_SUCCESS)
@@ -684,18 +684,18 @@ static int get_device_guid(char *name,
     const char name_string[] = "Name";
 
     len = sizeof (enum_name);
-    status = RegEnumKeyEx(control_net_key, 
-                          i, 
-                          enum_name, 
-                          &len, 
-                          NULL, 
-                          NULL, 
-                          NULL, 
+    status = RegEnumKeyEx(control_net_key,
+                          i,
+                          enum_name,
+                          &len,
+                          NULL,
+                          NULL,
+                          NULL,
                           NULL);
 
-    if (status == ERROR_NO_MORE_ITEMS) 
+    if (status == ERROR_NO_MORE_ITEMS)
       break;
-    else if (status != ERROR_SUCCESS) 
+    else if (status != ERROR_SUCCESS)
       break;
 
     if (len != strlen(NETWORK_ADAPTER_GUID))
@@ -707,13 +707,13 @@ static int get_device_guid(char *name,
               NETWORK_CONNECTIONS_KEY,
               enum_name);
 
-    status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
+    status = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
                           connection_string,
                           0,
                           KEY_READ,
                           &connKey);
 
-    if (status != ERROR_SUCCESS) 
+    if (status != ERROR_SUCCESS)
       break;
 
     len = sizeof (name_data);
@@ -810,10 +810,12 @@ static void after_write(uv_write_t* req, int status) {
           uv_strerror(status));
 }
 
+/*
 static void after_shutdown(uv_shutdown_t* req, int status) {
   uv_close((uv_handle_t*) req->handle, on_close);
   free(req);
 }
+*/
 
 static void after_read(uv_stream_t* handle,
                        ssize_t nread,
@@ -846,7 +848,7 @@ static void after_read(uv_stream_t* handle,
     memcpy(buf->base+12,buf->base+16,4);
     memcpy(buf->base+16,ip,4);
   } else {
-    printf("data %p len:%d\n", buf->base,buf->len);
+    printf("data %p len:%lu\n", buf->base, (unsigned long)buf->len);
   }
 
   wr = (write_req_t*) malloc(sizeof *wr);
@@ -871,17 +873,17 @@ static void echo_alloc(uv_handle_t* handle,
 }
 
 void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
-  fprintf(stderr, 
-          "Process exited with status %d, signal %d\n", 
-          exit_status, 
-          term_signal);
+  fprintf(stderr,
+          "Process exited with status %lu, signal %lu\n",
+          (unsigned long)exit_status,
+          (unsigned long)term_signal);
   uv_close((uv_handle_t*) req, NULL);
 }
 
-// TEST_IMPL(device_tun_echo) 
+// TEST_IMPL(device_tun_echo)
 
 
-int main()
+int main_test_libuv()
 
 {
   #define BUF_SZ 1024
@@ -906,7 +908,7 @@ int main()
     return 0;
   }
 
-  snprintf(tmp, 
+  snprintf(tmp,
            sizeof(tmp),
            "%%windir%%\\system32\\netsh interface ip set address \"%s\"" \
            " static 10.3.0.2 255.255.255.0",
@@ -943,8 +945,8 @@ int main()
     if (fork() == 0) {
       system(
         "ifconfig tuntest 10.3.0.1 netmask 255.255.255.252 pointopoint 10.3.0.2"
-      ); 
-      system("ping 10.3.0.2 -c 10"); 
+      );
+      system("ping 10.3.0.2 -c 10");
       exit(0);
    }
   }
@@ -1031,7 +1033,7 @@ int main(int argc, char** argv)
 
 	if (argc>=2) { // temporary code to test libuv directly from this program
 		if (strcmp(argv[1],"--testlibuv")) {
-			test_libuv();
+			main_test_libuv();
 			return 0;
 		}
 	}
