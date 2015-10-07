@@ -1045,7 +1045,7 @@ int main(int argc, char** argv)
 {
 
 	if (argc>=2) { // temporary code to test libuv directly from this program
-		if (strcmp(argv[1],"--testlibuv")) {
+		if (0 == strcmp(argv[1],"--testlibuv")) {
 			main_test_libuv();
 			return 0;
 		}
