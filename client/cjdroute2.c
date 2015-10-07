@@ -605,8 +605,8 @@ int main(int argc, char** argv)
     char* sysInfo = SysInfo_describe(SysInfo_detect(), allocator);
     Log_info(logger, "Cjdns %s %s", ArchInfo_getArchStr(), sysInfo);
     Log_info(logger," Cjdns uses libuv: %d.%d.%d%s %s",
-        UV_VERSION_MAJOR, UV_VERSION_MINOR, UV_VERSION_PATCH, UV_VERSION_SUFFIX,
-        ( UV_VERSION_IS_RELEASE ? "(release)" : "(test version)" ));
+                UV_VERSION_MAJOR, UV_VERSION_MINOR, UV_VERSION_PATCH, UV_VERSION_SUFFIX,
+                ( UV_VERSION_IS_RELEASE ? "(release)" : "(test version)" ));
 
     // --------------------- Check for running instance  --------------------- //
 

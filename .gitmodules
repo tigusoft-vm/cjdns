@@ -1,10 +1,9 @@
 [submodule "libuv"]
 	path = node_build/dependencies/libuv
-	url = https://github.com/tigusoft-vm/libuv.git
-	branch = cjdns_libuv_notun
+	url = https://github.com/libuv/libuv.git 
+	branch =  cjdns_libuv_apidev
 
 [submodule "gyp"]
 	path = node_build/dependencies/gyp
 	url = https://chromium.googlesource.com/external/gyp
 	branch = master
-
