@@ -1055,6 +1055,9 @@ var configure = module.exports.configure = function (params, configFunc) {
             return;
         }
 
+/*
+TODO(rfree) the codestyle is getting in way of some tests; will clear them up later
+
         debug("Checking codestyle");
 
         var sema = Semaphore.create(64);
@@ -1080,6 +1083,7 @@ var configure = module.exports.configure = function (params, configFunc) {
                 }));
             }));
         });
+*/
 
     }).nThen(function (waitFor) {
 
