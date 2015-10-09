@@ -419,26 +419,26 @@ int main() {
 #ifdef __linux__
   {
     struct ifreq ifr;
-    uv_ioargs_t args = {0};
-    int flags = IFF_TUN|IFF_NO_PI;
-    args.arg = &ifr;
-
     memset(&ifr, 0, sizeof(ifr));
-    ifr.ifr_flags = flags;
-    strncpy(ifr.ifr_name, "tun0", IFNAMSIZ);
+    ifr.ifr_flags = IFF_TUN; // |IFF_NO_PI; // we use TUN for now
+    strncpy(ifr.ifr_name, "tuntest", 10); // TODO(rfree) limit length here when that is a variable
+    printf("Will call TUNSETIFF ioctl\n");
 
-    r = uv_device_ioctl(&device, TUNSETIFF, &args);
+    uv_os_fd_t fd = 0;
+    if ( uv_fileno( (uv_handle_t*) &device , &fd ) != 0 ) { // TODO(rfree) is this castig correct use for uv_fileno?
+      printf("Can not convert fd!\n");
+      return 0;
+		}
+		printf("tuntap fileno fd=%d\n", fd);
+		// r = uv_device_ioctl(&device, TUNSETIFF, &args);
+    r = ioctl( fd , TUNSETIFF , &ifr );
     ASSERT(r >= 0);
 
-    /* should be use uv_spawn */
-    if (fork() == 0) {
-      system(
-        "ifconfig tun0 10.3.0.1 netmask 255.255.255.252 pointopoint 10.3.0.2"
-      ); 
-      system("ping 10.3.0.2 -c 10"); 
-      exit(0);
-   }
-  }
+		printf("Will set address: ioctl\n");
+
+		printf("Ok, tuntap configuration is done\n");
+	//	return 0;
+	}
 #endif
 #ifdef WIN32
   {
