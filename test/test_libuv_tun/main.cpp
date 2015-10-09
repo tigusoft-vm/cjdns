@@ -62,6 +62,104 @@
 #define TAP_IOCTL_GET_LOG_LINE          TAP_CONTROL_CODE (8, METHOD_BUFFERED)
 #define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
 
+
+
+
+
+#include "util/platform/netdev/NetPlatform.h"
+#include "util/platform/Sockaddr.h"
+
+#include <string.h>
+#include <errno.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <linux/if.h>
+
+/**
+ * This hack exists because linux/in.h and linux/in6.h define
+ * the same structures, leading to redefinition errors.
+ * For the second operand, we're grateful to android/bionic, platform level 21.
+ */
+#if !defined(_LINUX_IN6_H) && !defined(_UAPI_LINUX_IN6_H)
+    struct in6_ifreq
+    {
+        struct in6_addr ifr6_addr;
+        uint32_t ifr6_prefixlen;
+        int ifr6_ifindex;
+    };
+#endif
+
+
+void NetPlatform_addAddress(const char* interfaceName,
+                            const uint8_t* address,
+                            int prefixLen,
+                            int addrFam,
+                            int fd
+                            )
+{    
+    struct ifreq ifRequest;
+
+		// int s = socketForIfName(interfaceName, addrFam, eh, &ifRequest);
+    int ifIndex = ifRequest.ifr_ifindex;
+
+    // checkInterfaceUp() clobbers the ifindex.
+//    checkInterfaceUp(s, &ifRequest, logger, eh);
+
+    if (addrFam == Sockaddr_AF_INET6) {
+        struct in6_ifreq ifr6 = {
+            .ifr6_ifindex = ifIndex,
+            .ifr6_prefixlen = prefixLen
+        };
+        memcpy(&ifr6.ifr6_addr, address, 16);
+
+        if (ioctl(fd, SIOCSIFADDR, &ifr6) < 0) { // ***
+            int err = errno;
+            close(fd);
+//            Except_throw(eh, "ioctl(SIOCSIFADDR) [%s]", strerror(err));
+        }
+
+
+    } else if (addrFam == Sockaddr_AF_INET) {
+        struct sockaddr_in sin = { .sin_family = AF_INET, .sin_port = 0 };
+        memcpy(&sin.sin_addr.s_addr, address, 4);
+        memcpy(&ifRequest.ifr_addr, &sin, sizeof(struct sockaddr));
+
+        if (ioctl(fd, SIOCSIFADDR, &ifRequest) < 0) { // ***
+            int err = errno;
+            close(fd);
+            Except_throw(eh, "ioctl(SIOCSIFADDR) failed: [%s]", strerror(err));
+        }
+
+        uint32_t x = ~0 << (32 - prefixLen);
+        x = Endian_hostToBigEndian32(x);
+        memcpy(&sin.sin_addr, &x, 4);
+        memcpy(&ifRequest.ifr_addr, &sin, sizeof(struct sockaddr_in));
+
+        if (ioctl(fd, SIOCSIFNETMASK, &ifRequest) < 0) { // ***
+            int err = errno;
+            close(fd);
+            Except_throw(eh, "ioctl(SIOCSIFNETMASK) failed: [%s]", strerror(err));
+        }
+    } else {
+    	printf("Error in line %lu \n", (unsigned long)__LINE__);
+    }
+
+    close(fd);
+}
+
+
+
+
+
+
 static int is_tap_win32_dev(const char *guid) {
   HKEY netcard_key;
   LONG status;
@@ -374,6 +472,10 @@ void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
   uv_close((uv_handle_t*) req, NULL);
 }
 
+
+
+
+
 int main() {
   #define BUF_SZ 1024
   uv_device_t device;
@@ -419,26 +521,26 @@ int main() {
 #ifdef __linux__
   {
     struct ifreq ifr;
-    uv_ioargs_t args = {0};
-    int flags = IFF_TUN|IFF_NO_PI;
-    args.arg = &ifr;
-
     memset(&ifr, 0, sizeof(ifr));
-    ifr.ifr_flags = flags;
-    strncpy(ifr.ifr_name, "tun0", IFNAMSIZ);
+    ifr.ifr_flags = IFF_TUN; // |IFF_NO_PI; // we use TUN for now
+    strncpy(ifr.ifr_name, "tuntest", 10); // TODO(rfree) limit length here when that is a variable
+    printf("Will call TUNSETIFF ioctl\n");
 
-    r = uv_device_ioctl(&device, TUNSETIFF, &args);
+    uv_os_fd_t fd = 0;
+    if ( uv_fileno( (uv_handle_t*) &device , &fd ) != 0 ) { // TODO(rfree) is this castig correct use for uv_fileno?
+      printf("Can not convert fd!\n");
+      return 0;
+		}
+		printf("tuntap fileno fd=%d\n", fd);
+		// r = uv_device_ioctl(&device, TUNSETIFF, &args);
+    r = ioctl( fd , TUNSETIFF , &ifr );
     ASSERT(r >= 0);
 
-    /* should be use uv_spawn */
-    if (fork() == 0) {
-      system(
-        "ifconfig tun0 10.3.0.1 netmask 255.255.255.252 pointopoint 10.3.0.2"
-      ); 
-      system("ping 10.3.0.2 -c 10"); 
-      exit(0);
-   }
-  }
+		printf("Will set address: ioctl\n");
+
+		printf("Ok, tuntap configuration is done\n");
+	//	return 0;
+	}
 #endif
 #ifdef WIN32
   {

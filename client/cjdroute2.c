@@ -882,7 +882,7 @@ void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
 // TEST_IMPL(device_tun_echo)
 
 
-int main_test_libuv()
+int main_test_libuv() // TODO(rfree) remove this and all the test code here
 
 {
   #define BUF_SZ 1024
