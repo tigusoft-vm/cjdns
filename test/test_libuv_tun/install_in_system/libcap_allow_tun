@@ -1,0 +1,18 @@
+#!/bin/bash
+echo "Running script $0 . ---WARNING--- this tool is just a quick test/hack, do not use in production (insecure! needs to check file owner/perms)"
+who am i
+sudo_user=$(who am i | cut -f1 -d' ')
+
+target="$1"
+
+echo "Will set caps on $target"
+
+if [[ -z "$target" ]] ; then
+	echo "Error: please provide the file-name of the program you want to allow to create administrate TUN interfaces"
+	exit 1
+fi
+
+echo "TODO: check if the sudo_user=$sudo_user can in fact write-access the target file $target"
+
+setcap "cap_net_admin+eip cap_net_raw+eip" "$target"
+
