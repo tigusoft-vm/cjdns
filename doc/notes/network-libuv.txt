@@ -8,9 +8,9 @@ on windows.
 
 There are two opposing ways to fix this in libuv:
 
-1) "api-cjd" or "1327" is the approach written by cjd, to add iocp objects to libuv, as proposed in:
+1) "api-cjd" or "1327" is the approach written by cjd, to add iocp objects access to libuv, as proposed in:
 https://github.com/joyent/libuv/pull/1327
-good: the cjd code is using this for year(s)
+good: the cjd code is using this for year(s) and it works well
 bad: we must download and apply custom patch to libuv and build it locally
 bad: this is making any libuv bugfixing our problem, and is making it impossible for many distributions 
 to ever accept cjdroute into official repository (as they do not allow duplicating 
@@ -18,7 +18,7 @@ and bundling custom libraries).
 
 2) "api-dev" or "848" is the approach written by zhaozg, using new uv_device_t
 https://github.com/libuv/libuv/pull/484
-good: this api is "blessed" by libuv team as the solutin that will be integrated into libuv
+good: this api is "blessed" by libuv team as the solution that will be integrated into libuv
 good: future libuv versions will include it officially, so cjdroute can be in official repos of all distributions
 But it needs to port the code.
 
@@ -26,25 +26,45 @@ But it needs to port the code.
 
 This results in 3 software branches of cjdns in this regard:
 
-libuv-0.11.19 with apicjd, this is the way it worked since always, and this is the current official version.
+Cjdns using libuv-0.11.19 with api-cjd, this is the way it worked since always, and this is the current official version.
 
-libuv-1.x with api-cjd, this version was created by Tigusoft including rfree et al. and is now developed in
-https://github.com/tigusoft-vm/cjdns/tree/cjdns_libuv_apicjd on use_submodules branch by da2ce7 (though
+Cjdns using libuv-1.x with api-cjd, this version was created by Tigusoft including rfree et al. and is now developed in
+https://github.com/tigusoft-vm/cjdns/tree/cjdns_libuv_apicjd based on "use_submodules" branch by da2ce7 (though
 it could work also without git_submodules of course).
 It will be made into PR when it's ready and tested.
 
-libuv-1.x with api-dev, is currently developed in:
+Cjdns using libuv-1.x with api-dev, is currently developed in:
 https://github.com/tigusoft-vm/cjdns/commits/cjdns_libuv_apidev_test2
 This version is not written yet.
 
 
+=== Testing libuv ===
 
-=== TUN/TAP replated code ===
+I recommend to use following test programs to check if the network/TUN code is portable.
+We are testing there the code for api-dev (for libuv with path 484):
+
+
+There are small simple one-file test programs, they should provide scripts to build
+on unix, and to cross-build for windows, and to build on windows native (e.g. with mingw/cygwin).
+
+test/test_libuv_idle - trivial libuv program
+test/test_libuv_tun - using TUN in libuv, this is most interesting
+
+At start, this programs will (or should) print the exact library uv version that they use.
+
+=== Test scripts ===
+
+See test/test_libuv_tun for libcap / CAP / TUN linux sudo script
+
+watch -n 0.1 -d  ip a
+ping6 -i 0.2 -w 0.3 -W 0.3        h.meshnet.pl
+
+
+=== Code TUN/TAP bookmarks ===
 
 init TUN: (windows)
 all in /tuntap/windows/TAPInterface.c
 that is used from: interface/tuntap/TUNInterface_win32.c
-
 
 configure TUN interface IP Address (linux)
 util/platform/netdev/NetPlatform_linux.c - ioctl(s, SIOCSIFADDR, &ifRequest)
