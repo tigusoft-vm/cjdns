@@ -63,11 +63,18 @@
 #define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
 
 
+#endif
 
 
 
-#include "util/platform/netdev/NetPlatform.h"
-#include "util/platform/Sockaddr.h"
+
+
+
+
+
+
+// #include "util/platform/netdev/NetPlatform.h" // XXX ?
+// #include "util/platform/Sockaddr.h" // XXX ?
 
 #include <string.h>
 #include <errno.h>
@@ -79,7 +86,9 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <net/if.h>
+
+//#include <net/if.h>
+
 #include <arpa/inet.h>
 #include <linux/if.h>
 
@@ -98,66 +107,79 @@
 #endif
 
 
-void NetPlatform_addAddress(const char* interfaceName,
+
+
+
+int NetPlatform_addAddress(int fd,
                             const uint8_t* address,
                             int prefixLen,
-                            int addrFam,
-                            int fd
+                            int addrFam
                             )
 {    
     struct ifreq ifRequest;
 
 		// int s = socketForIfName(interfaceName, addrFam, eh, &ifRequest);
-    int ifIndex = ifRequest.ifr_ifindex;
+    int ifIndex = ifRequest.ifr_ifindex; // XXX TODO bad - find the index
 
     // checkInterfaceUp() clobbers the ifindex.
 //    checkInterfaceUp(s, &ifRequest, logger, eh);
 
-    if (addrFam == Sockaddr_AF_INET6) {
-        struct in6_ifreq ifr6 = {
+    if (addrFam == /*Sockaddr_*/AF_INET6) {
+
+//			in6_ifreq test_var; // test TODO(rfree) remove later
+				in6_ifreq ifr6;
+				ifr6.ifr6_ifindex = ifIndex; 
+				ifr6.ifr6_prefixlen = prefixLen; 
+
+ /*       struct in6_ifreq ifr6 = {
             .ifr6_ifindex = ifIndex,
             .ifr6_prefixlen = prefixLen
-        };
+        };*/
+
         memcpy(&ifr6.ifr6_addr, address, 16);
 
         if (ioctl(fd, SIOCSIFADDR, &ifr6) < 0) { // ***
             int err = errno;
-            close(fd);
+            return -1;
 //            Except_throw(eh, "ioctl(SIOCSIFADDR) [%s]", strerror(err));
         }
 
 
-    } else if (addrFam == Sockaddr_AF_INET) {
+    } else if (addrFam == /*Sockaddr_*/AF_INET) {
         struct sockaddr_in sin = { .sin_family = AF_INET, .sin_port = 0 };
         memcpy(&sin.sin_addr.s_addr, address, 4);
         memcpy(&ifRequest.ifr_addr, &sin, sizeof(struct sockaddr));
 
         if (ioctl(fd, SIOCSIFADDR, &ifRequest) < 0) { // ***
             int err = errno;
-            close(fd);
-            Except_throw(eh, "ioctl(SIOCSIFADDR) failed: [%s]", strerror(err));
+            return -1;
+            //Except_throw(eh, "ioctl(SIOCSIFADDR) failed: [%s]", strerror(err));
         }
 
         uint32_t x = ~0 << (32 - prefixLen);
-        x = Endian_hostToBigEndian32(x);
+
+        printf("NOT IMPLEMENTED in %d !!!\n", __LINE__);
+//        x = Endian_hostToBigEndian32(x);  /// TODO(rfree)
+
         memcpy(&sin.sin_addr, &x, 4);
         memcpy(&ifRequest.ifr_addr, &sin, sizeof(struct sockaddr_in));
 
         if (ioctl(fd, SIOCSIFNETMASK, &ifRequest) < 0) { // ***
             int err = errno;
-            close(fd);
-            Except_throw(eh, "ioctl(SIOCSIFNETMASK) failed: [%s]", strerror(err));
+            return -1;
+            //Except_throw(eh, "ioctl(SIOCSIFNETMASK) failed: [%s]", strerror(err));
         }
     } else {
     	printf("Error in line %lu \n", (unsigned long)__LINE__);
     }
 
-    close(fd);
+   //  close(fd);
 }
 
 
 
 
+#ifdef WIN32
 
 
 static int is_tap_win32_dev(const char *guid) {
@@ -369,6 +391,8 @@ const char* TAPDevice_find(char* preferredName,
 
 #endif
 
+
+
 typedef struct {
   uv_write_t req;
   uv_buf_t buf;
@@ -524,7 +548,7 @@ int main() {
     memset(&ifr, 0, sizeof(ifr));
     ifr.ifr_flags = IFF_TUN; // |IFF_NO_PI; // we use TUN for now
     strncpy(ifr.ifr_name, "tuntest", 10); // TODO(rfree) limit length here when that is a variable
-    printf("Will call TUNSETIFF ioctl\n");
+    printf("ioctl: Will create the interface\n");
 
     uv_os_fd_t fd = 0;
     if ( uv_fileno( (uv_handle_t*) &device , &fd ) != 0 ) { // TODO(rfree) is this castig correct use for uv_fileno?
@@ -533,10 +557,16 @@ int main() {
 		}
 		printf("tuntap fileno fd=%d\n", fd);
 		// r = uv_device_ioctl(&device, TUNSETIFF, &args);
-    r = ioctl( fd , TUNSETIFF , &ifr );
+    r = ioctl( fd , TUNSETIFF , &ifr ); // ***
     ASSERT(r >= 0);
 
-		printf("Will set address: ioctl\n");
+		printf("ioctl: Will set ip address\n");
+		uint8_t address[16];
+		for (int i=0; i<16; ++i) address[i] = i+100;
+		address[0] = 0xFC;
+		r = NetPlatform_addAddress(fd, address, 8,  42); // abc);
+		// family_ipv6);
+    ASSERT(r >= 0);
 
 		printf("Ok, tuntap configuration is done\n");
 	//	return 0;
