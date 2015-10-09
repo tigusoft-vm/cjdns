@@ -22,10 +22,12 @@
 #include "uv.h"
 #include "task.h"
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __linux__
+#include <unistd.h> // for fork()
 #include <sys/ioctl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
@@ -360,7 +362,7 @@ static void on_close(uv_handle_t* peer) {
 static void echo_alloc(uv_handle_t* handle,
                        size_t suggested_size,
                        uv_buf_t* buf) {
-  buf->base = malloc(suggested_size);
+  buf->base = (char*) malloc(suggested_size);
   buf->len = suggested_size;
 }
 
@@ -372,7 +374,7 @@ void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
   uv_close((uv_handle_t*) req, NULL);
 }
 
-TEST_IMPL(device_tun_echo) {
+int main() {
   #define BUF_SZ 1024
   uv_device_t device;
   char buff[BUF_SZ] = {0};
