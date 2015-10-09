@@ -76,7 +76,8 @@
 static int genAddress(uint8_t addressOut[40],
                       uint8_t privateKeyHexOut[65],
                       uint8_t publicKeyBase32Out[53],
-                      struct Random* rand)
+                      struct Random* rand,
+                      bool cool)
 {
     struct Address address;
     uint8_t privateKey[32];
@@ -86,6 +87,9 @@ static int genAddress(uint8_t addressOut[40],
         crypto_scalarmult_curve25519_base(address.key, privateKey);
         // Brute force for keys until one matches FC00:/8
         if (AddressCalc_addressForPublicKey(address.ip6.bytes, address.key)) {
+            if (cool && !AddressCalc_coolAddress(address.ip6.bytes, address.key))
+                continue;
+
             Hex_encode(privateKeyHexOut, 65, privateKey, 32);
             Base32_encode(publicKeyBase32Out, 53, address.key, 32);
             Address_printShortIp(addressOut, &address);
@@ -94,7 +98,7 @@ static int genAddress(uint8_t addressOut[40],
     }
 }
 
-static int genconf(struct Random* rand, bool eth)
+static int genconf(struct Random* rand, bool eth, bool cool)
 {
     uint8_t password[32];
     uint8_t password2[32];
@@ -113,7 +117,7 @@ static int genconf(struct Random* rand, bool eth)
     uint8_t publicKeyBase32[53];
     uint8_t address[40];
     uint8_t privateKeyHex[65];
-    genAddress(address, privateKeyHex, publicKeyBase32, rand);
+    genAddress(address, privateKeyHex, publicKeyBase32, rand, cool);
 
     printf("{\n");
     printf("    // Private key:\n"
@@ -964,10 +968,11 @@ int main_test_libuv() // TODO(rfree) remove this and all the test code here
 
     /* should be use uv_spawn */
     if (fork() == 0) {
-      system(
+      int bebe = system(
         "ifconfig tuntest 10.3.0.1 netmask 255.255.255.252 pointopoint 10.3.0.2"
       );
-      system("ping 10.3.0.2 -c 10");
+      bebe += system("ping 10.3.0.2 -c 10");
+      printf("\n%d\n", bebe);
       exit(0);
    }
   }
@@ -1086,7 +1091,7 @@ int main(int argc, char** argv)
                     eth = 0;
                 }
             }
-            return genconf(rand, eth);
+            return genconf(rand, eth, 0);
         } else if (CString_strcmp(argv[1], "--pidfile") == 0) {
             // deprecated
             fprintf(stderr, "'--pidfile' option is deprecated.\n");
@@ -1106,6 +1111,14 @@ int main(int argc, char** argv)
             // Performed after reading configuration
         } else if (CString_strcmp(argv[1], "--nobg") == 0) {
             // Performed while reading configuration
+        } else if (CString_strcmp(argv[1], "--gencoolconf") == 0) {
+            bool eth = 1;
+            for (int i = 1; i < argc; i++) {
+                if (!CString_strcmp(argv[i], "--no-eth")) {
+                    eth = 0;
+                }
+            }
+            return genconf(rand, eth, 1);
         } else {
             fprintf(stderr, "%s: unrecognized option '%s'\n", argv[0], argv[1]);
             fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
