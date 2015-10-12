@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gcc main.cpp  -I ../../node_build/dependencies/libuv/include/ -L ../../build_linux/dependencies/libuv/out/Release/ -lpthread -luv || exit 1
+gcc --std=gnu99 main.c  -I ../../node_build/dependencies/libuv/include/ -L ../../build_linux/dependencies/libuv/out/Release/ -lpthread -luv || exit 1
 
 prog=$(which libcap_allow_tun)
 echo "libcap program is $prog"
