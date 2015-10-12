@@ -45,7 +45,7 @@
 #define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
 
 
-#if 0
+//#if 0
 // TODO(rfree) fix TAP for uv_device
 
 struct TAPInterface_Version_pvt {
@@ -96,10 +96,12 @@ struct TAPInterface_pvt
 {
     struct TAPInterface pub;
 
-    uv_iocp_t readIocp;
+    //uv_iocp_t readIocp;
+	OVERLAPPED read_overlapped;
     struct Message* readMsg;
 
-    uv_iocp_t writeIocp;
+    //uv_iocp_t writeIocp;
+	OVERLAPPED write_overlapped;
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
     /** This allocator holds messages pending write in memory until they are complete. */
     struct Allocator* pendingWritesAlloc;
@@ -124,7 +126,8 @@ static void postRead(struct TAPInterface_pvt* tap)
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
-    OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+    //OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+	OVERLAPPED* readol = &tap->read_overlapped;
     if (!ReadFile(tap->handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -143,7 +146,8 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead;
-    OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+    //OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+	OVERLAPPED* readol = &tap->read_overlapped;
     if (!GetOverlappedResult(tap->handle, readol, &bytesRead, FALSE)) {
         Assert_failure("GetOverlappedResult(read, tap): %s\n", WinFail_strerror(GetLastError()));
     }
@@ -169,7 +173,8 @@ static void postWrite(struct TAPInterface_pvt* tap)
     Assert_true(!tap->isPendingWrite);
     tap->isPendingWrite = 1;
     struct Message* msg = tap->writeMsgs[0];
-    OVERLAPPED* writeol = (OVERLAPPED*) tap->writeIocp.overlapped;
+    //OVERLAPPED* writeol = (OVERLAPPED*) tap->writeIocp.overlapped;
+	OVERLAPPED* writeol = &tap->write_overlapped;
     if (!WriteFile(tap->handle, msg->bytes, msg->length, NULL, writeol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -186,7 +191,8 @@ static void postWrite(struct TAPInterface_pvt* tap)
 static void writeCallbackB(struct TAPInterface_pvt* tap)
 {
     DWORD bytesWritten;
-    OVERLAPPED* writeol = (OVERLAPPED*) tap->writeIocp.overlapped;
+    //OVERLAPPED* writeol = (OVERLAPPED*) tap->writeIocp.overlapped;
+	OVERLAPPED* writeol = &tap->write_overlapped;
     if (!GetOverlappedResult(tap->handle, writeol, &bytesWritten, FALSE)) {
         Assert_failure("GetOverlappedResult(write, tap): %s\n", WinFail_strerror(GetLastError()));
     }
@@ -298,5 +304,5 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 }
 
 
-#endif
+//#endif
 
