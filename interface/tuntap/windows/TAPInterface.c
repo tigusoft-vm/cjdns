@@ -158,11 +158,11 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     postRead(tap);
 }
 
-static void readCallback(uv_iocp_t* readIocp)
+static void readCallback(void* readIocp) // TODO: argument
 {
-    struct TAPInterface_pvt* tap =
-        Identity_check((struct TAPInterface_pvt*)
-            (((char*)readIocp) - offsetof(struct TAPInterface_pvt, readIocp)));
+    struct TAPInterface_pvt* tap; /* =
+        Identity_check((struct TAPInterface_pvt*) // TODO
+            (((char*)readIocp) - offsetof(struct TAPInterface_pvt, readIocp)));*/
     readCallbackB(tap);
 }
 
@@ -220,11 +220,11 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
     }
 }
 
-static void writeCallback(uv_iocp_t* writeIocp)
+static void writeCallback(void* writeIocp) // TODO: argument
 {
-    struct TAPInterface_pvt* tap =
-        Identity_check((struct TAPInterface_pvt*)
-            (((char*)writeIocp) - offsetof(struct TAPInterface_pvt, writeIocp)));
+    struct TAPInterface_pvt* tap; /* =
+        Identity_check((struct TAPInterface_pvt*) // TODO
+            (((char*)writeIocp) - offsetof(struct TAPInterface_pvt, writeIocp))); */
     writeCallbackB(tap);
 }
 
@@ -281,13 +281,14 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     }
 
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
-    int ret;
-    if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
+    int ret = 0;
+	// TODO !!!!!!!!!!!!!!!!
+    /*if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
         Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
     }
     if ((ret = uv_iocp_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
         Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
-    }
+    }*/
 
     struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->handle, &ver, eh);
