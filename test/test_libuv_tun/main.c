@@ -23,6 +23,9 @@
 #include "task.h"
 
 
+#include "Sockaddr.h" // ../../util/platform/Sockaddr.h" // TODO(rfree)
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,27 +96,30 @@
 #include <linux/if.h>
 
 
-int Sockaddr_AF_INET=42; // TODO(rfree) XXX work around for includes problems
-int Sockaddr_AF_INET6=66; // TODO(rfree) XXX work around for includes problems
+int Sockaddr_AF_INET=2; // TODO(rfree) XXX work around for includes problems
+int Sockaddr_AF_INET6=10; // TODO(rfree) XXX work around for includes problems
+// from: build_linux/util_platform_Sockaddr_c.o.i TODO(rfree)
 
 
-struct Except { };
-struct Log { };
+struct Except { int x; };
+struct Log { int x; };
 
-Log *logger;
+struct Log *logger;
 
-void Except_throw(Except *eh, const char *msg, ...) {
+void Except_throw(struct Except *eh, const char *msg, ...) {
 	va_list args;
 	va_start(args, msg);
 	printf("Error: ");
 	printf(msg, args);
+	printf("\n");
 	va_end(args);
 }
 
-void Log_info(Log *eh, const char *msg, ...) {
+void Log_info(struct Log *eh, const char *msg, ...) {
 	va_list args;
 	va_start(args, msg);
 	printf(msg, args);
+	printf("\n");
 	va_end(args);
 }
 
@@ -149,6 +155,7 @@ static int socketForIfName(const char* interfaceName,
                            struct ifreq* ifRequestOut)
 {
     int s;
+    printf("function %s for [%s] with af=%d \n", __FUNCTION__, interfaceName, af);
 
     if ((s = socket(af, SOCK_DGRAM, 0)) < 0) {
         Except_throw(eh, "socket() [%s]", strerror(errno));
@@ -156,11 +163,12 @@ static int socketForIfName(const char* interfaceName,
 
     memset(ifRequestOut, 0, sizeof(struct ifreq));
     strncpy(ifRequestOut->ifr_name, interfaceName, IFNAMSIZ);
+    printf("Getting name of [%s] on socket s=%d\n", ifRequestOut->ifr_name, s);
 
     if (ioctl(s, SIOCGIFINDEX, ifRequestOut) < 0) {
         int err = errno;
+        Except_throw(eh, "ioctl(SIOCGIFINDEX) [%s] %d", strerror(err), err);
         close(s);
-        Except_throw(eh, "ioctl(SIOCGIFINDEX) [%s]", strerror(err));
     }
     return s;
 }
@@ -191,6 +199,8 @@ static void checkInterfaceUp(int socket,
     }
 }
 
+
+
 void NetPlatform_addAddress(const char* interfaceName,
                             const uint8_t* address,
                             int prefixLen,
@@ -198,12 +208,16 @@ void NetPlatform_addAddress(const char* interfaceName,
                             struct Log* logger,
                             struct Except* eh)
 {
+    printf("\nFunction to add the address\n\n");
+
     struct ifreq ifRequest;
     int s = socketForIfName(interfaceName, addrFam, eh, &ifRequest);
     int ifIndex = ifRequest.ifr_ifindex;
+    printf("ifIndex=%d after socketForIfName, s=%d\n" , ifIndex, s);
 
     // checkInterfaceUp() clobbers the ifindex.
     checkInterfaceUp(s, &ifRequest, logger, eh);
+    printf("ifIndex=%d\n" , ifIndex);
 
     if (addrFam == Sockaddr_AF_INET6) {
         struct in6_ifreq ifr6 = {
@@ -231,7 +245,7 @@ void NetPlatform_addAddress(const char* interfaceName,
         }
 
         uint32_t x = ~0 << (32 - prefixLen);
-        x = Endian_hostToBigEndian32(x);
+//        x = Endian_hostToBigEndian32(x); // TODO(rfree)
         memcpy(&sin.sin_addr, &x, 4);
         memcpy(&ifRequest.ifr_addr, &sin, sizeof(struct sockaddr_in));
 
@@ -241,7 +255,9 @@ void NetPlatform_addAddress(const char* interfaceName,
             Except_throw(eh, "ioctl(SIOCSIFNETMASK) failed: [%s]", strerror(err));
         }
     } else {
-        Assert_true(0);
+
+            Except_throw(eh, "Unknown socket type");
+ //       Assert_true(0);
     }
 
     close(s);
@@ -739,12 +755,20 @@ int main() {
     r = ioctl( fd , TUNSETIFF , &ifr ); // ***
     ASSERT(r >= 0);
 
+    printf("After creation of tuntap: ifr_ifindex=%d\n", ifr.ifr_ifindex);
+
 		printf("ioctl: Will set ip address\n");
 		uint8_t address[16];
 		for (int i=0; i<16; ++i) address[i] = i+100;
 		address[0] = 0xFC;
-		r = NetPlatform_addAddress(fd, address, 191,  8); 
-  //  ASSERT(r >= 0);
+
+		struct Log* logger = NULL;
+		struct Except* eh = NULL;
+
+	//	close(fd);
+
+		NetPlatform_addAddress("tuntest", address, 8,  Sockaddr_AF_INET6,  logger,eh);
+	  //  ASSERT(r >= 0);
 
 		printf("Ok, tuntap configuration is done\n");
 	//	return 0;
