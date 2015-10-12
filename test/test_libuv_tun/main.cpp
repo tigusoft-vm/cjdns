@@ -108,10 +108,34 @@
 
 
 
+static void checkInterfaceUp(int socket,
+                             struct ifreq* ifRequest
+                             )
+{
+    printf("Checking if up interface [%s] \n", ifRequest->ifr_name);
+    if (ioctl(socket, SIOCGIFFLAGS, ifRequest) < 0) {
+        int err = errno;
+        printf("Error ioctl %d: [%s] in %d in %s\n", err, strerror(err), __LINE__, __FUNCTION__);
+    }
+
+    if (ifRequest->ifr_flags & IFF_UP & IFF_RUNNING) {
+    		printf("Already up\n");
+        // already up.
+        return;
+    }
+
+    printf("Bringing up interface [%s] \n", ifRequest->ifr_name);
+    ifRequest->ifr_flags |= IFF_UP | IFF_RUNNING;
+    if (ioctl(socket, SIOCSIFFLAGS, ifRequest) < 0) {
+        int err = errno;
+        printf("Error ioctl %d: [%s] in %d in %s\n", err, strerror(err), __LINE__, __FUNCTION__);
+    }
+}
+
 
 
 int NetPlatform_addAddress(int fd,
-                            const uint8_t* address,
+                            const uint8_t* address_param,
                             int prefixLen,
                             int addrFam
                             )
@@ -119,12 +143,16 @@ int NetPlatform_addAddress(int fd,
     struct ifreq ifRequest;
 
 		// int s = socketForIfName(interfaceName, addrFam, eh, &ifRequest);
+
+    checkInterfaceUp(fd, &ifRequest); // logger, eh);
+
     int ifIndex = ifRequest.ifr_ifindex; // XXX TODO bad - find the index
 
     // checkInterfaceUp() clobbers the ifindex.
-//    checkInterfaceUp(s, &ifRequest, logger, eh);
 
-    if (addrFam == /*Sockaddr_*/AF_INET6) {
+    //if (addrFam == /*Sockaddr_*/AF_INET6) 
+    
+    {
 
 //			in6_ifreq test_var; // test TODO(rfree) remove later
 				in6_ifreq ifr6;
@@ -136,16 +164,26 @@ int NetPlatform_addAddress(int fd,
             .ifr6_prefixlen = prefixLen
         };*/
 
+				uint8_t address[16];
+				for (int i=0; i<16; ++i) address[i] = i+100;
+				address[0] = 0xFC;
+
         memcpy(&ifr6.ifr6_addr, address, 16);
 
         if (ioctl(fd, SIOCSIFADDR, &ifr6) < 0) { // ***
             int err = errno;
+            printf("Error ioctl %d: [%s] in %d in %s\n", err, strerror(err), __LINE__, __FUNCTION__);
             return -1;
-//            Except_throw(eh, "ioctl(SIOCSIFADDR) [%s]", strerror(err));
         }
+        else printf("Ok - address\n");
 
 
-    } else if (addrFam == /*Sockaddr_*/AF_INET) {
+    } 
+    
+    #if 0
+    ipv4
+
+    else if (addrFam == /*Sockaddr_*/AF_INET) {
         struct sockaddr_in sin = { .sin_family = AF_INET, .sin_port = 0 };
         memcpy(&sin.sin_addr.s_addr, address, 4);
         memcpy(&ifRequest.ifr_addr, &sin, sizeof(struct sockaddr));
@@ -170,10 +208,13 @@ int NetPlatform_addAddress(int fd,
             //Except_throw(eh, "ioctl(SIOCSIFNETMASK) failed: [%s]", strerror(err));
         }
     } else {
-    	printf("Error in line %lu \n", (unsigned long)__LINE__);
+    	printf("Error (unknwon network type) in line %lu \n", (unsigned long)__LINE__);
     }
+    #endif
 
    //  close(fd);
+
+   return 0; // ok
 }
 
 
@@ -564,9 +605,8 @@ int main() {
 		uint8_t address[16];
 		for (int i=0; i<16; ++i) address[i] = i+100;
 		address[0] = 0xFC;
-		r = NetPlatform_addAddress(fd, address, 8,  42); // abc);
-		// family_ipv6);
-    ASSERT(r >= 0);
+		r = NetPlatform_addAddress(fd, address, 191,  8); 
+  //  ASSERT(r >= 0);
 
 		printf("Ok, tuntap configuration is done\n");
 	//	return 0;
