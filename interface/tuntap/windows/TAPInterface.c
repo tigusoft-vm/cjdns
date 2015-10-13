@@ -104,7 +104,10 @@ struct TAPInterface_pvt
     //uv_iocp_t writeIocp;
 	uv_device_t writeIocp;
 	OVERLAPPED write_overlapped;
+	uv_write_t* wr;
+	uv_buf_t buffers[WRITE_MESSAGE_SLOTS];
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
+	uv_write_t* req;
     /** This allocator holds messages pending write in memory until they are complete. */
     struct Allocator* pendingWritesAlloc;
     int writeMessageCount;
@@ -269,6 +272,9 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     tap->log = logger;
     tap->pub.assignedName = dev->name;
     tap->pub.generic.send = sendMessage;
+	tap->wr = malloc(sizeof(uv_write_t)); // TODO free!!!
+	// TODO buffer alloc?
+	//tap->buffer = uv_buf_init(NULL, 256); 
 
     tap->handle = CreateFile(dev->path,
                              GENERIC_READ | GENERIC_WRITE,
@@ -284,14 +290,15 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
     int ret = 0;
-	// TODO !!!!!!!!!!!!!!!!
-    if ((ret = uv_device_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
-        Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
-    }
-    if ((ret = uv_device_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
+	
+	if (ret = uv_device_read_start(&tap->readIocp, NULL/*TODO: uv_alloc_cb*/, readCallback)) {
+		Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
+	}
+	
+    if ((ret = uv_device_write(ebp->loop, tap->wr, &tap->writeIocp, tap->buffers, WRITE_MESSAGE_SLOTS, writeCallback))) {
         Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
     }
-
+	
     struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->handle, &ver, eh);
 
