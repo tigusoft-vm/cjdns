@@ -97,10 +97,12 @@ struct TAPInterface_pvt
     struct TAPInterface pub;
 
     //uv_iocp_t readIocp;
+	uv_device_t readIocp;
 	OVERLAPPED read_overlapped;
     struct Message* readMsg;
 
     //uv_iocp_t writeIocp;
+	uv_device_t writeIocp;
 	OVERLAPPED write_overlapped;
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
     /** This allocator holds messages pending write in memory until they are complete. */
@@ -158,11 +160,11 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     postRead(tap);
 }
 
-static void readCallback(void* readIocp) // TODO: argument
+static void readCallback(uv_device_t* readIocp)
 {
-    struct TAPInterface_pvt* tap; /* =
+    struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*) // TODO
-            (((char*)readIocp) - offsetof(struct TAPInterface_pvt, readIocp)));*/
+            (((char*)readIocp) - offsetof(struct TAPInterface_pvt, readIocp)));
     readCallbackB(tap);
 }
 
@@ -220,11 +222,11 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
     }
 }
 
-static void writeCallback(void* writeIocp) // TODO: argument
+static void writeCallback(uv_device_t* writeIocp)
 {
-    struct TAPInterface_pvt* tap; /* =
+    struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*) // TODO
-            (((char*)writeIocp) - offsetof(struct TAPInterface_pvt, writeIocp))); */
+            (((char*)writeIocp) - offsetof(struct TAPInterface_pvt, writeIocp)));
     writeCallbackB(tap);
 }
 
@@ -283,12 +285,12 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
     int ret = 0;
 	// TODO !!!!!!!!!!!!!!!!
-    /*if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
+    if ((ret = uv_device_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
         Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
     }
-    if ((ret = uv_iocp_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
+    if ((ret = uv_device_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
         Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
-    }*/
+    }
 
     struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->handle, &ver, eh);
