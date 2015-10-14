@@ -1,0 +1,1 @@
+$CC -o main --std=gnu99 main.c  -I ../../node_build/dependencies/libuv/include/ -L ../../build_win32/dependencies/libuv/out/Release/obj.target -lpthread -luv -lws2_32 -luserenv -lpsapi -liphlpapi
