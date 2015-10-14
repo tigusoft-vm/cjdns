@@ -40,7 +40,7 @@
 #include <stdarg.h> 
 #include <assert.h>
 
-#ifdef WIN32
+#if defined (_WIN32) || defined (__CYGWIN__)
 #define NETWORK_ADAPTER_GUID "{4D36E972-E325-11CE-BFC1-08002BE10318}"
 
 #define ADAPTER_KEY \
@@ -82,19 +82,21 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
+
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/socket.h>
+
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stddef.h>
 
-//#include <net/if.h>
-
+#if !defined(__CYGWIN__) && !defined(_WIN32)
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <linux/if.h>
-
+#endif
 
 int Sockaddr_AF_INET=2; // TODO(rfree) XXX work around for includes problems
 int Sockaddr_AF_INET6=10; // TODO(rfree) XXX work around for includes problems
@@ -149,6 +151,8 @@ void Log_info(struct Log *eh, const char *msg, ...) {
  * @param ifRequestOut an ifreq which will be populated with the interface index of the interface.
  * @return a socket for interacting with this interface.
  */
+ 
+#if defined __linux__ && !defined __CYGWIN__
 static int socketForIfName(const char* interfaceName,
                            int af,
                            struct Except* eh,
@@ -282,7 +286,7 @@ void NetPlatform_setMTU(const char* interfaceName,
 
     close(s);
 }
-
+#endif 
 
 #if 0
 
@@ -374,7 +378,8 @@ void NetPlatform_setMTU(const char* interfaceName,
 
 
 
-#ifdef WIN32
+
+#if defined (_WIN32) || defined (__CYGWIN__)
 
 
 static int is_tap_win32_dev(const char *guid) {
@@ -631,10 +636,12 @@ static void after_shutdown(uv_shutdown_t* req, int status) {
 static void after_read(uv_stream_t* handle,
                        ssize_t nread,
                        const uv_buf_t* buf) {
+  printf("after_read!!!!!!!!!!!!!!!\n");
   write_req_t *wr;
 
   if (nread < 0) {
     /* Error or EOF */
+	printf("error or eof\n");
     ASSERT(nread == UV_EOF);
 
     free(buf->base);
@@ -644,6 +651,7 @@ static void after_read(uv_stream_t* handle,
 
   if (nread == 0) {
     /* Everything OK, but nothing read. */
+	printf("Everything OK, but nothing read.\n");
     free(buf->base);
     return;
   }
@@ -697,9 +705,9 @@ void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
 
 int main() {
   #define BUF_SZ 1024
-  uv_device_t device;
+  uv_device_t device, device_tap2;
   char buff[BUF_SZ] = {0};
-#ifdef WIN32
+#if defined (_WIN32) || defined (__CYGWIN__)
   char guid[BUF_SZ] = {0};
   char tmp[MAX_PATH];
 #endif
@@ -708,7 +716,7 @@ int main() {
 #ifdef __linux__
   strcpy(buff,"/dev/net/tun");
 #else
-#ifdef WIN32
+#if defined (_WIN32) || defined (__CYGWIN__)
 
   if (!TAPDevice_find(buff, sizeof(buff), guid, sizeof(guid)))
   {
@@ -720,9 +728,10 @@ int main() {
 
   snprintf(tmp, 
            sizeof(tmp),
-           "%%windir%%\\system32\\netsh interface ip set address \"%s\"" \
+           "netsh interface ip set address \"%s\"" \
            " static 10.3.0.2 255.255.255.0",
            buff);
+  printf("%s\n", tmp);
   system(tmp);
 
   snprintf(buff,sizeof(buff), "%s%s%s",USERMODEDEVICEDIR,guid,TAPSUFFIX);
@@ -734,7 +743,9 @@ int main() {
 
   loop = uv_default_loop();
 
+  uv_device_init(loop, &device_tap2, "TAP2", O_RDWR); // XXX
   r = uv_device_init(loop, &device, buff, O_RDWR);
+  printf("%d\n", r);
   ASSERT(r == 0);
 
 #ifdef __linux__
@@ -774,7 +785,7 @@ int main() {
 	//	return 0;
 	}
 #endif
-#ifdef WIN32
+#if defined (_WIN32) || defined (__CYGWIN__)
   {
     uv_process_t child_req = {0};
     uv_process_options_t options = {0};
