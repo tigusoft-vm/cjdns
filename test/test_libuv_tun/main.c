@@ -98,6 +98,10 @@
 #include <linux/if.h>
 #endif
 
+char mybuff[10];
+//uv_buf_t rbuf = uv_buf_init(mybuff, sizeof(mybuff));
+uv_device_t device, device_tap2;
+
 int Sockaddr_AF_INET=2; // TODO(rfree) XXX work around for includes problems
 int Sockaddr_AF_INET6=10; // TODO(rfree) XXX work around for includes problems
 // from: build_linux/util_platform_Sockaddr_c.o.i TODO(rfree)
@@ -433,7 +437,7 @@ static int is_tap_win32_dev(const char *guid) {
                           0,
                           KEY_READ,
                           &unit_key);
-
+	printf("KEY_READ: %d\n", KEY_READ);
     if (status != ERROR_SUCCESS) 
       return FALSE;
     else {
@@ -444,7 +448,7 @@ static int is_tap_win32_dev(const char *guid) {
                                &data_type,
                                (uint8_t*) component_id,
                                &len);
-
+		printf("component_id_string: %s\n", component_id_string);
       if (!(status != ERROR_SUCCESS || data_type != REG_SZ)) {
         len = sizeof (net_cfg_instance_id);
         status = RegQueryValueEx(unit_key,
@@ -522,7 +526,9 @@ static int get_device_guid(char *name,
               "%s\\%s\\Connection",
               NETWORK_CONNECTIONS_KEY,
               enum_name);
-
+	
+	printf("connection_string: %s\n", connection_string);
+	
     status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
                           connection_string,
                           0,
@@ -532,6 +538,7 @@ static int get_device_guid(char *name,
     if (status != ERROR_SUCCESS) 
       break;
 
+	printf("name_string %s\n", name_string);
     len = sizeof (name_data);
     status = RegQueryValueEx(connKey,
                              name_string,
@@ -549,7 +556,7 @@ static int get_device_guid(char *name,
       status = !ERROR_SUCCESS;
       return status;
     }
-
+	printf("enum_name: %s\n", enum_name);
     if (is_tap_win32_dev(enum_name)) {
       _snprintf(name, name_size, "%s", enum_name);
       if (actual_name) {
@@ -577,6 +584,10 @@ static int get_device_guid(char *name,
     return -1;
 
   return 0;
+}
+
+void evevnt_cb(uv_fs_event_t *handle, const char *filename, int events, int status) {
+	printf("evevnt_cb\n");
 }
 
 const char* TAPDevice_find(char* preferredName,
@@ -633,10 +644,16 @@ static void after_shutdown(uv_shutdown_t* req, int status) {
   free(req);
 }
 
+static void echo_alloc(uv_handle_t* handle,
+                       size_t suggested_size,
+                       uv_buf_t* buf);
+
 static void after_read(uv_stream_t* handle,
                        ssize_t nread,
                        const uv_buf_t* buf) {
   printf("after_read!!!!!!!!!!!!!!!\n");
+  printf("buff: %s\n", buf->base);
+  printf("buff size: %d\n", buf->len);
   write_req_t *wr;
 
   if (nread < 0) {
@@ -674,10 +691,13 @@ static void after_read(uv_stream_t* handle,
   ASSERT(wr != NULL);
   wr->buf = uv_buf_init(buf->base, nread);
 
-  if (uv_write(&wr->req, handle, &wr->buf, 1, after_write)) {
+  /*if (uv_write(&wr->req, handle, &wr->buf, 1, after_write)) {
     printf("uv_write failed\n");
     abort();
-  }
+  }*/
+  printf("uv_read_start\n");
+  uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
+  printf("end uv_read_start\n");
 }
 
 static void on_close(uv_handle_t* peer) {
@@ -687,6 +707,7 @@ static void on_close(uv_handle_t* peer) {
 static void echo_alloc(uv_handle_t* handle,
                        size_t suggested_size,
                        uv_buf_t* buf) {
+  printf("echo_alloc\n");
   buf->base = (char*) malloc(suggested_size);
   buf->len = suggested_size;
 }
@@ -705,10 +726,10 @@ void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
 
 int main() {
   #define BUF_SZ 1024
-  uv_device_t device, device_tap2;
+  uv_device_t device;
   char buff[BUF_SZ] = {0};
 #if defined (_WIN32) || defined (__CYGWIN__)
-  char guid[BUF_SZ] = {0};
+  char guid[BUF_SZ] = "DC79795F-2F54-408B-A913-512C04BBE1D1";
   char tmp[MAX_PATH];
 #endif
   int r;
@@ -725,13 +746,14 @@ int main() {
             "to do this test\n");
     return 0;
   }
-
+  char buff_tap2[BUF_SZ] = "TAP2";
+  printf("buff!!!!!!!!!!!!!: %s\n", buff);
   snprintf(tmp, 
            sizeof(tmp),
            "netsh interface ip set address \"%s\"" \
            " static 10.3.0.2 255.255.255.0",
-           buff);
-  printf("%s\n", tmp);
+           buff_tap2);
+  printf("tmp: %s\n", tmp);
   system(tmp);
 
   snprintf(buff,sizeof(buff), "%s%s%s",USERMODEDEVICEDIR,guid,TAPSUFFIX);
@@ -740,11 +762,11 @@ int main() {
   return 0;
 #endif
 #endif
-
+  char tap2_filename[] = "\\\\.\\Global\\{DC79795F-2F54-408B-A913-512C04BBE1D1}.tap";
   loop = uv_default_loop();
 
-  uv_device_init(loop, &device_tap2, "TAP2", O_RDWR); // XXX
-  r = uv_device_init(loop, &device, buff, O_RDWR);
+  r = uv_device_init(loop, &device_tap2, tap2_filename, O_RDWR); // XXX
+  //r = uv_device_init(loop, &device, buff, O_RDWR);
   printf("%d\n", r);
   ASSERT(r == 0);
 
@@ -802,7 +824,8 @@ int main() {
     ioarg.output_len = sizeof(version);
     ioarg.output = (void*) version;
 
-    r = uv_device_ioctl(&device, TAP_IOCTL_GET_VERSION, &ioarg);
+    //r = uv_device_ioctl(&device, TAP_IOCTL_GET_VERSION, &ioarg);
+    r = uv_device_ioctl(&device_tap2, TAP_IOCTL_GET_VERSION, &ioarg);
     ASSERT(r >= 0);
     printf("version: %d.%d.%d\n",version[0],version[1],version[2]);
 
@@ -814,7 +837,8 @@ int main() {
     ioarg.output_len = sizeof(p2p);
     ioarg.output = (void*) &p2p;
 
-    r = uv_device_ioctl(&device, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
+    //r = uv_device_ioctl(&device, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
+    r = uv_device_ioctl(&device_tap2, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
     ASSERT(r >= 0);
 
     ioarg.input_len = sizeof(enable);
@@ -822,7 +846,8 @@ int main() {
     ioarg.output_len = sizeof(enable);
     ioarg.output = (void*) &enable;
 
-    r = uv_device_ioctl(&device, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
+    //r = uv_device_ioctl(&device, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
+    r = uv_device_ioctl(&device_tap2, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
     ASSERT(r >= 0);
 
     args[0] = "ping";
@@ -852,10 +877,17 @@ int main() {
   }
 #endif
 
-  r = uv_read_start((uv_stream_t*) &device, echo_alloc, after_read);
+	uv_fs_event_t ereq;
+	uv_fs_event_init(loop, &ereq);
+	uv_fs_event_start(&ereq, evevnt_cb, tap2_filename, UV_FS_EVENT_RECURSIVE);
+	printf("uv_read_start\n");
+  //r = uv_read_start((uv_stream_t*) &device, echo_alloc, after_read);
+  r = uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
   ASSERT(r == 0);
 
+  printf("uv_run\n");
   uv_run(loop, UV_RUN_DEFAULT);
+  printf("end main\n");
   return 0;
 }
 
