@@ -22,7 +22,6 @@
 #include "uv.h"
 #include "task.h"
 
-
 #include "Sockaddr.h" // ../../util/platform/Sockaddr.h" // TODO(rfree)
 
 
@@ -156,7 +155,53 @@ void Log_info(struct Log *eh, const char *msg, ...) {
  * @return a socket for interacting with this interface.
  */
  
+void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle);
+ 
+
+void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
+	printf("uv_device_queue_read\n");
+  uv_read_t* req;
+  BOOL r;
+  DWORD err;
+
+  //assert(handle->flags & UV_HANDLE_READING);
+  //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
+  //assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);
+
+  req = &handle->read_req;
+  memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
+  handle->alloc_cb((uv_handle_t*) handle, 65536, &handle->read_buffer);
+  if (handle->read_buffer.len == 0) {
+    handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
+    return;
+  }
+
+  r = ReadFile(handle->handle,
+               handle->read_buffer.base,
+               handle->read_buffer.len,
+               NULL,
+               &req->u.io.overlapped);
+
+  if (r) {
+    //handle->flags |= UV_HANDLE_READ_PENDING;
+    handle->reqs_pending++;
+    //uv_insert_pending_req(loop, (uv_req_t*) req);
+  } else {
+    err = GetLastError();
+    if (r == 0 && err == ERROR_IO_PENDING) {
+      /* The req will be processed with IOCP. */
+      //handle->flags |= UV_HANDLE_READ_PENDING;
+      handle->reqs_pending++;
+    } else {
+      /* Make this req pending reporting an error. */
+      //SET_REQ_ERROR(req, err);
+      //uv_insert_pending_req(loop, (uv_req_t*) req);
+      handle->reqs_pending++;
+    }
+  } 
+}
 #if defined __linux__ && !defined __CYGWIN__
+
 static int socketForIfName(const char* interfaceName,
                            int af,
                            struct Except* eh,
@@ -652,10 +697,11 @@ static void after_read(uv_stream_t* handle,
                        ssize_t nread,
                        const uv_buf_t* buf) {
   printf("after_read!!!!!!!!!!!!!!!\n");
-  printf("buff: %s\n", buf->base);
-  printf("buff size: %d\n", buf->len);
   write_req_t *wr;
-
+    
+  //printf("buff: \n");
+  //for(int i = 0; i < buf->len; ++i) printf("%c", device_tap2.read_buffer.base[i]);
+  //printf("\nbuff size: %d\n", device_tap2.read_buffer.len);
   if (nread < 0) {
     /* Error or EOF */
 	printf("error or eof\n");
@@ -698,6 +744,7 @@ static void after_read(uv_stream_t* handle,
   printf("uv_read_start\n");
   uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
   printf("end uv_read_start\n");
+  uv_device_queue_read(loop, &device_tap2);
 }
 
 static void on_close(uv_handle_t* peer) {
@@ -884,7 +931,11 @@ int main() {
   //r = uv_read_start((uv_stream_t*) &device, echo_alloc, after_read);
   r = uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
   ASSERT(r == 0);
-
+  #if defined (_WIN32) || defined (__CYGWIN__)
+  //for (int i = 0; i < 5; ++i) {
+	//uv_device_queue_read(loop, &device_tap2);
+  //}
+  #endif
   printf("uv_run\n");
   uv_run(loop, UV_RUN_DEFAULT);
   printf("end main\n");
