@@ -98,6 +98,7 @@ struct TAPInterface_pvt
     //uv_iocp_t readIocp;
     struct Message* readMsg;
 	uv_device_t device;
+	OVERLAPPED read_overlapped;
 
     //uv_iocp_t writeIocp;
 	uv_write_t* req;
@@ -105,6 +106,7 @@ struct TAPInterface_pvt
     /** This allocator holds messages pending write in memory until they are complete. */
     struct Allocator* pendingWritesAlloc;
     int writeMessageCount;
+	OVERLAPPED write_overlapped;
 
     int isPendingWrite;
 
@@ -125,7 +127,7 @@ static void postRead(struct TAPInterface_pvt* tap)
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
-    OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+    OVERLAPPED* readol = &tap->read_overlapped;
     if (!ReadFile(tap->handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -144,7 +146,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead;
-    OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+    OVERLAPPED* readol = &tap->read_overlapped;
     if (!GetOverlappedResult(tap->handle, readol, &bytesRead, FALSE)) {
         Assert_failure("GetOverlappedResult(read, tap): %s\n", WinFail_strerror(GetLastError()));
     }
@@ -187,7 +189,7 @@ static void postWrite(struct TAPInterface_pvt* tap)
 static void writeCallbackB(struct TAPInterface_pvt* tap)
 {
     DWORD bytesWritten;
-    OVERLAPPED* writeol = (OVERLAPPED*) tap->writeIocp.overlapped;
+    OVERLAPPED* writeol = &write_overlapped;
     if (!GetOverlappedResult(tap->handle, writeol, &bytesWritten, FALSE)) {
         Assert_failure("GetOverlappedResult(write, tap): %s\n", WinFail_strerror(GetLastError()));
     }
@@ -295,6 +297,9 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     tap->log = logger;
     tap->pub.assignedName = dev->name;
     tap->pub.generic.send = sendMessage;
+	memset(&tap->read_overlapped, 0, sizeof(tap->read_overlapped));
+	memset(&tap->write_overlapped, 0, sizeof(tap->write_overlapped));
+	
 
     tap->handle = CreateFile(dev->path,
                              GENERIC_READ | GENERIC_WRITE,
