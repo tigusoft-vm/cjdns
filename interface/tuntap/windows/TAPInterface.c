@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <io.h>
+#include <fcntl.h>
 
 #define TAP_CONTROL_CODE(request,method) \
   CTL_CODE (FILE_DEVICE_UNKNOWN, request, method, FILE_ANY_ACCESS)
@@ -45,8 +46,6 @@
 #define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
 
 
-#if 0
-// TODO(rfree) fix TAP for uv_device
 
 struct TAPInterface_Version_pvt {
     unsigned long major;
@@ -96,10 +95,12 @@ struct TAPInterface_pvt
 {
     struct TAPInterface pub;
 
-    uv_iocp_t readIocp;
+    //uv_iocp_t readIocp;
     struct Message* readMsg;
+	uv_device_t device;
 
-    uv_iocp_t writeIocp;
+    //uv_iocp_t writeIocp;
+	uv_write_t* req;
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
     /** This allocator holds messages pending write in memory until they are complete. */
     struct Allocator* pendingWritesAlloc;
@@ -240,6 +241,37 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
     return 0;
 }
 
+static int init_overlapped(uv_loop_t* loop, uv_os_file_t fd, uv_read_cb read_cb cb) {
+	NTSTATUS nt_status;
+	IO_STATUS_BLOCK io_status;
+	FILE_MODE_INFORMATION mode_information;
+	
+  /* Check if the handle was created with FILE_FLAG_OVERLAPPED. */
+	nt_status = pNtQueryInformationFile(fd,
+		&io_status,
+		&mode_info,
+		sizeof(mode_info),
+		FileModeInformation);
+		
+	 if (nt_status != STATUS_SUCCESS) {
+		return uv_translate_sys_error(GetLastError());
+	}
+	if (mode_info.Mode & FILE_SYNCHRONOUS_IO_ALERT ||
+		mode_info.Mode & FILE_SYNCHRONOUS_IO_NONALERT) {
+		/* Not overlapped. */
+		return UV_EINVAL;
+	} else {
+	/* Try to associate with IOCP. */
+		if (!CreateIoCompletionPort(fd, loop->iocp, (ULONG_PTR)handle, 0)) {
+			if (ERROR_INVALID_PARAMETER == GetLastError()) {
+			// Already associated.
+			} else {
+				return uv_translate_sys_error(GetLastError());
+			}
+		}
+	}
+}
+
 struct TAPInterface* TAPInterface_new(const char* preferredName,
                                       struct Except* eh,
                                       struct Log* logger,
@@ -254,6 +286,8 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 
     Log_debug(logger, "Opening TAP-Windows device [%s] at location [%s]", dev->name, dev->path);
 
+	int r;
+	
     struct TAPInterface_pvt* tap = Allocator_calloc(alloc, sizeof(struct TAPInterface_pvt), 1);
     Identity_set(tap);
     tap->base = base;
@@ -276,12 +310,18 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
     int ret;
-    if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
+	
+    /*if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
         Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
     }
     if ((ret = uv_iocp_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
         Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
-    }
+    }*/
+	
+	//r = uv_device_init(loop, &device_tap2, tap2_filename, O_RDWR);
+	TAPDevice tap_device = *TAPDevice_find(NULL, NULL, alloc);
+	uv_device_init(ebp->loop, tap->device, tap_device.path, O_RDWR);
+	ASSERT(r == 0);
 
     struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->handle, &ver, eh);
@@ -298,5 +338,4 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 }
 
 
-#endif
 
