@@ -28,11 +28,11 @@ struct Iface* TUNInterface_new(const char* interfaceName,
                                    struct Allocator* alloc)
 {
 
-	Log_critical(logger, "You are calling the function [%s] the creates TUN, but "
-    "this code is disabled. Do not use tun (on windows?). Disable it in configuration!\n",
-    __FUNCTION__ );
-	return NULL; // TODO(rfree) fix this for new uv_device
-	/*
+	//Log_critical(logger, "You are calling the function [%s] the creates TUN, but "
+    //"this code is disabled. Do not use tun (on windows?). Disable it in configuration!\n",
+    //__FUNCTION__ );
+	//return NULL; // TODO(rfree) fix this for new uv_device
+	
     struct TAPInterface* tap = TAPInterface_new(interfaceName, eh, logger, base, alloc);
     CString_strncpy(assignedInterfaceName, tap->assignedName, TUNInterface_IFNAMSIZ);
     if (isTapMode) { return &tap->generic; }
@@ -45,5 +45,5 @@ struct Iface* TUNInterface_new(const char* interfaceName,
     ndp->prefixLen = 8;
 
     return &ndp->internal;
-    */
+    
 }
