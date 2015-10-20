@@ -28,6 +28,7 @@
 #include "wire/Message.h"
 
 #include <stdio.h>
+#include <assert.h>
 #include <windows.h>
 #include <winternl.h>
 #include <io.h>
@@ -160,6 +161,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
+	printf("readCallback!!!!!!!!!!!!!!!!!\n");
 	struct TAPInterface_pvt* tap =
 		Identity_check((struct TAPInterface_pvt*)
 			(((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
@@ -170,6 +172,8 @@ static void writeCallbackB(struct TAPInterface_pvt* tap);
 
 static void postWrite(struct TAPInterface_pvt* tap)
 {
+	//write_req_t wr;
+	//uv_write(&wr->req); // TODO
     Assert_true(!tap->isPendingWrite);
     tap->isPendingWrite = 1;
     struct Message* msg = tap->writeMsgs[0];
@@ -224,6 +228,15 @@ static void writeCallback(uv_write_t* req, int status)
         Identity_check((struct TAPInterface_pvt*)
             (((char*)req->handle) - offsetof(struct TAPInterface_pvt, device)));
     writeCallbackB(tap);
+}
+
+// TODO
+static void alloc_cb(uv_handle_t* handle,
+                       size_t suggested_size,
+                       uv_buf_t* buf) {
+  //printf("echo_alloc\n");
+  buf->base = (char*) malloc(suggested_size);
+  buf->len = suggested_size;
 }
 
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
@@ -302,34 +315,42 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 	memset(&tap->write_overlapped, 0, sizeof(tap->write_overlapped));
 	
 
-    tap->handle = CreateFile(dev->path,
+    /*tap->handle = CreateFile(dev->path,
                              GENERIC_READ | GENERIC_WRITE,
                              0,
                              0,
                              OPEN_EXISTING,
                              FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
                              0);
-
+*/
     if (tap->handle == INVALID_HANDLE_VALUE) {
         WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
     }
 
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
-    int ret;
+    /*int ret;
 	
-    /*if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
+    if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
         Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
     }
     if ((ret = uv_iocp_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
         Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
     }*/
 	
-	//r = uv_device_init(loop, &device_tap2, tap2_filename, O_RDWR);
 	struct TAPDevice tap_device = *TAPDevice_find(NULL, NULL, alloc);
-	uv_device_init(ebp->loop, tap->device, tap_device.path, O_RDWR);
-	ASSERT(r == 0);
-
-    struct TAPInterface_Version_pvt ver = { .major = 0 };
+	printf("tap_device name: %s\n", tap_device.name);
+	printf("tap_device path: %s\n", tap_device.path);
+	SetLastError(0);
+	r = uv_device_init(ebp->loop, &tap->device, tap_device.path, O_RDWR);
+	printf("GetLastError: %d\n", GetLastError());
+	//ASSERT(r == 0);
+	printf("r = %d\n", r);
+	assert(r == 0);
+	
+	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
+    assert(r == 0);
+	
+	struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->handle, &ver, eh);
 
     setEnabled(tap->handle, 1, eh);
