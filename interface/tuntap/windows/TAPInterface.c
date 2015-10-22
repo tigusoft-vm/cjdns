@@ -103,7 +103,7 @@ struct TAPInterface_pvt
 	OVERLAPPED read_overlapped;
 
     //uv_iocp_t writeIocp;
-	uv_write_t* req;
+	uv_write_t write_req;
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
     /** This allocator holds messages pending write in memory until they are complete. */
     struct Allocator* pendingWritesAlloc;
@@ -121,8 +121,65 @@ struct TAPInterface_pvt
     Identity
 };
 
+// TODO
+static void alloc_cb(uv_handle_t* handle,
+                       size_t suggested_size,
+                       uv_buf_t* buf) {
+  //printf("echo_alloc\n");
+  buf->base = (char*) malloc(suggested_size);
+  buf->len = suggested_size;
+}
+
+static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
+	printf("uv_device_queue_read\n");
+  uv_read_t* req;
+  BOOL r;
+  DWORD err;
+
+  //assert(handle->flags & UV_HANDLE_READING);
+  //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
+  //assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);
+
+  req = &handle->read_req;
+  memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
+  handle->alloc_cb((uv_handle_t*) handle, 65536, &handle->read_buffer);
+  if (handle->read_buffer.len == 0) {
+    handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
+    return;
+  }
+//memset(handle->read_buffer.base, 0, handle->read_buffer.len);
+  r = ReadFile(handle->handle,
+               handle->read_buffer.base,
+               handle->read_buffer.len,
+               NULL,
+               &req->u.io.overlapped);
+	printf("uv_device_queue_read r = %d\n", r);
+//  if (r) {
+    //handle->flags |= UV_HANDLE_READ_PENDING;
+//    handle->reqs_pending++;
+    //uv_insert_pending_req(loop, (uv_req_t*) req);
+//  } else {
+//    err = GetLastError();
+//    if (r == 0 && err == ERROR_IO_PENDING) {
+      /* The req will be processed with IOCP. */
+      //handle->flags |= UV_HANDLE_READ_PENDING;
+//      handle->reqs_pending++;
+//    } else {
+      /* Make this req pending reporting an error. */
+      //SET_REQ_ERROR(req, err);
+      //uv_insert_pending_req(loop, (uv_req_t*) req);
+//      handle->reqs_pending++;
+//    }
+//  }
+	printf("uv_device_queue_read buff\n");
+	//for (int i = 0; i < 100; ++i)
+		//printf("%c", handle->read_buffer.base[i]);
+	printf("\n");
+	
+}
 
 static void readCallbackB(struct TAPInterface_pvt* tap);
+static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf);
 
 static void postRead(struct TAPInterface_pvt* tap)
 {
@@ -142,6 +199,7 @@ static void postRead(struct TAPInterface_pvt* tap)
         //Log_debug(tap->log, "Read returned immediately");
     }
     Log_debug(tap->log, "Posted read");
+	uv_device_queue_read(tap->device.loop, &tap->device);
 }
 
 static void readCallbackB(struct TAPInterface_pvt* tap)
@@ -159,7 +217,8 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     Log_debug(tap->log, "Read [%d] bytes", msg->length);
     Iface_send(&tap->pub.generic, msg);
     Allocator_free(msg->alloc);
-    postRead(tap);
+	printf("readCallbackB: uv_read_start\n");
+	postRead(tap);
 }
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
@@ -175,8 +234,8 @@ static void writeCallbackB(struct TAPInterface_pvt* tap);
 
 static void postWrite(struct TAPInterface_pvt* tap)
 {
-	//write_req_t wr;
-	//uv_write(&wr->req); // TODO
+	//printf("post postWrite\n");
+	//uv_write(&tap->write_req, );
     Assert_true(!tap->isPendingWrite);
     tap->isPendingWrite = 1;
     struct Message* msg = tap->writeMsgs[0];
@@ -233,17 +292,9 @@ static void writeCallback(uv_write_t* req, int status)
     writeCallbackB(tap);
 }
 
-// TODO
-static void alloc_cb(uv_handle_t* handle,
-                       size_t suggested_size,
-                       uv_buf_t* buf) {
-  //printf("echo_alloc\n");
-  buf->base = (char*) malloc(suggested_size);
-  buf->len = suggested_size;
-}
-
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 {
+	printf("send sendMessage\n");
     struct TAPInterface_pvt* tap = Identity_check((struct TAPInterface_pvt*) iface);
     if (tap->writeMessageCount >= WRITE_MESSAGE_SLOTS) {
         Log_info(tap->log, "DROP message because the tap is lagging");
