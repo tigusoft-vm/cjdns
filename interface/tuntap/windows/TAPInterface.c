@@ -147,6 +147,11 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
   }
+  	printf("uv devicequeue read ReadFile\n");
+	printf("handle: %ul  ", (unsigned long)handle->handle);
+	printf("bytes: %d  ", handle->read_buffer.base);
+	printf("msg len: %d\n", handle->read_buffer.len);
+	
 //memset(handle->read_buffer.base, 0, handle->read_buffer.len);
   r = ReadFile(handle->handle,
                handle->read_buffer.base,
@@ -197,6 +202,10 @@ static void postRead(struct TAPInterface_pvt* tap)
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
     OVERLAPPED* readol = &tap->read_overlapped;
 	memset(readol, 0, sizeof(OVERLAPPED));
+	printf("post read read file\n");
+	printf("handle: %ul  ", (unsigned long)tap->device.handle);
+	printf("bytes: %d  ", msg->bytes);
+	printf("msg len: %d  \n", 1534);
     if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -209,6 +218,8 @@ static void postRead(struct TAPInterface_pvt* tap)
     }
     Log_debug(tap->log, "Posted read");
 	uv_device_queue_read(tap->device.loop, &tap->device);
+	memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
+	tap->device.read_buffer.len = 1534;
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap);
