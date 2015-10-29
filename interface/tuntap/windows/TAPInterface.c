@@ -179,14 +179,14 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
 //      handle->reqs_pending++;
 //    }
 //  }
-	printf("uv_device_queue_read buff\n");
+	//printf("uv_device_queue_read buff\n");
 	//for (int i = 0; i < 100; ++i)
-		//printf("%c", handle->read_buffer.base[i]);
-	printf("\n");
+		////printf("%c", handle->read_buffer.base[i]);
+	//printf("\n");
 	
 }
 
-static void readCallbackB(struct TAPInterface_pvt* tap);
+static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread);
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf);
 
 static void postRead(struct TAPInterface_pvt* tap)
@@ -215,25 +215,27 @@ static void writeCallback(uv_write_t* req, int status);
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface);
 static void postWrite(struct TAPInterface_pvt* tap);
 
-static void readCallbackB(struct TAPInterface_pvt* tap)
+static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
 	printf("readCallbackB!!!!!!!!!!!!!!!!!\n");
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
-    DWORD bytesRead;
+    DWORD bytesRead = nread; // TODO rm bytesRead
     OVERLAPPED* readol = &tap->read_overlapped;
-    if (!GetOverlappedResult(tap->device.handle, readol, &bytesRead, FALSE)) {
+    /*if (!GetOverlappedResult(tap->device.handle, readol, &bytesRead, FALSE)) {
 		switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
             default: Assert_failure("GetOverlappedResult(read, tap): %s\n", WinFail_strerror(GetLastError()));
 		}
-    }
+    }*/
 	printf("bytesRead: %d\n", bytesRead);
 	printf("write_queue_size = %d\n", tap->device.write_queue_size);
     msg->length = bytesRead;
     Log_debug(tap->log, "Read [%d] bytes", msg->length);
 	printf("writeMessageCount = %d\n", tap->writeMessageCount);
+	printf("send message to iface %s\n", tap->pub.assignedName);
+	
     Iface_send(&tap->pub.generic, msg);
 	/*int uv_device_write(uv_loop_t* loop,
                     uv_write_t* req,
@@ -256,9 +258,15 @@ static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf
 	struct TAPInterface_pvt* tap =
 		Identity_check((struct TAPInterface_pvt*)
 			(((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
-	readCallbackB(tap);
+	readCallbackB(tap, nread);
 }
-
+int uv_device_write(uv_loop_t* loop,
+                    uv_write_t* req,
+                    uv_device_t* handle,
+                    const uv_buf_t bufs[],
+                    unsigned int nbufs,
+                    uv_write_cb cb);
+					
 static void postWrite(struct TAPInterface_pvt* tap)
 {
 	printf("post postWrite\n");
@@ -270,7 +278,7 @@ static void postWrite(struct TAPInterface_pvt* tap)
 	uv_buf_t msg_buff = uv_buf_init(msg->bytes, msg->length);
 	printf("write msg len = %d\n", msg_buff.len);
 	//for (int i = 0; i < msg_buff.len; ++i)
-	//	printf("%c", msg_buff.base[i]);
+	//	//printf("%c", msg_buff.base[i]);
 	//printf("\n");
 	//uv_write(&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
 	OVERLAPPED* writeol = &tap->write_overlapped;
@@ -334,6 +342,7 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
 static void writeCallback(uv_write_t* req, int status)
 {
 	printf("writeCallback\n");
+	//assert(0);
     struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*)
             (((char*)req->handle) - offsetof(struct TAPInterface_pvt, device)));
@@ -367,13 +376,13 @@ static int init_overlapped(uv_loop_t* loop, HANDLE fd) {
 	FILE_MODE_INFORMATION mode_info;
 	printf("Check if the handle was created with FILE_FLAG_OVERLAPPED.\n");
   /* Check if the handle was created with FILE_FLAG_OVERLAPPED. */
-  printf("pNtQueryInformationFile\n");
+  //printf("pNtQueryInformationFile\n");
 	/*nt_status = pNtQueryInformationFile(fd,
 		&io_status,
 		&mode_info,
 		sizeof(mode_info),
 		FileModeInformation);*/
-	printf("nt_status: %d\n", nt_status);
+	//printf("nt_status: %d\n", nt_status);
 	 //if (nt_status != STATUS_SUCCESS) {
 	 if (nt_status != 0) {
 		return uv_translate_sys_error(GetLastError());
@@ -442,9 +451,9 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
         Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
     }*/
 	
-	printf("init_overlapped\n");
-	r = init_overlapped(ebp->loop, tap->device.handle);
-	printf("r = %d\n", r);
+	//printf("init_overlapped\n");
+	//r = init_overlapped(ebp->loop, tap->device.handle);
+	//printf("r = %d\n", r);
 	
 	printf("tap_device name: %s\n", dev->name);
 	printf("tap_device path: %s\n", dev->path);
