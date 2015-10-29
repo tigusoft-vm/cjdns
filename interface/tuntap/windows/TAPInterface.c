@@ -206,7 +206,7 @@ static void postRead(struct TAPInterface_pvt* tap)
 	printf("handle: %ul  ", (unsigned long)tap->device.handle);
 	printf("bytes: %d  ", msg->bytes);
 	printf("msg len: %d  \n", 1534);
-    if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
+    /*if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
@@ -215,11 +215,11 @@ static void postRead(struct TAPInterface_pvt* tap)
     } else {
         // It doesn't matter if it returns immediately, it will also return async.
         //Log_debug(tap->log, "Read returned immediately");
-    }
+    }*/
     Log_debug(tap->log, "Posted read");
 	uv_device_queue_read(tap->device.loop, &tap->device);
-	memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
-	tap->device.read_buffer.len = 1534;
+	//memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
+	//tap->device.read_buffer.len = 1534;
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap);
