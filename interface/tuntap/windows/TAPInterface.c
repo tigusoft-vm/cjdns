@@ -196,6 +196,7 @@ static void postRead(struct TAPInterface_pvt* tap)
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
     OVERLAPPED* readol = &tap->read_overlapped;
+	memset(readol, 0, sizeof(OVERLAPPED));
     if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -222,13 +223,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
     OVERLAPPED* readol = &tap->read_overlapped;
-    /*if (!GetOverlappedResult(tap->device.handle, readol, &bytesRead, FALSE)) {
-		switch (GetLastError()) {
-            case ERROR_IO_PENDING:
-            case ERROR_IO_INCOMPLETE: break;
-            default: Assert_failure("GetOverlappedResult(read, tap): %s\n", WinFail_strerror(GetLastError()));
-		}
-    }*/
+
 	printf("bytesRead: %d\n", bytesRead);
 	printf("write_queue_size = %d\n", tap->device.write_queue_size);
     msg->length = bytesRead;
