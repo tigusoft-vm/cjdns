@@ -175,30 +175,35 @@ void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
   }
-
+//memset(handle->read_buffer.base, 0, handle->read_buffer.len);
   r = ReadFile(handle->handle,
                handle->read_buffer.base,
                handle->read_buffer.len,
                NULL,
                &req->u.io.overlapped);
-
-  if (r) {
+	printf("uv_device_queue_read r = %d\n", r);
+//  if (r) {
     //handle->flags |= UV_HANDLE_READ_PENDING;
-    handle->reqs_pending++;
+//    handle->reqs_pending++;
     //uv_insert_pending_req(loop, (uv_req_t*) req);
-  } else {
-    err = GetLastError();
-    if (r == 0 && err == ERROR_IO_PENDING) {
+//  } else {
+//    err = GetLastError();
+//    if (r == 0 && err == ERROR_IO_PENDING) {
       /* The req will be processed with IOCP. */
       //handle->flags |= UV_HANDLE_READ_PENDING;
-      handle->reqs_pending++;
-    } else {
+//      handle->reqs_pending++;
+//    } else {
       /* Make this req pending reporting an error. */
       //SET_REQ_ERROR(req, err);
       //uv_insert_pending_req(loop, (uv_req_t*) req);
-      handle->reqs_pending++;
-    }
-  } 
+//      handle->reqs_pending++;
+//    }
+//  }
+	printf("uv_device_queue_read buff\n");
+	//for (int i = 0; i < 100; ++i)
+		//printf("%c", handle->read_buffer.base[i]);
+	printf("\n");
+	
 }
 #if defined __linux__ && !defined __CYGWIN__
 
@@ -482,7 +487,7 @@ static int is_tap_win32_dev(const char *guid) {
                           0,
                           KEY_READ,
                           &unit_key);
-	printf("KEY_READ: %d\n", KEY_READ);
+	//printf("KEY_READ: %d\n", KEY_READ);
     if (status != ERROR_SUCCESS) 
       return FALSE;
     else {
@@ -493,7 +498,7 @@ static int is_tap_win32_dev(const char *guid) {
                                &data_type,
                                (uint8_t*) component_id,
                                &len);
-		printf("component_id_string: %s\n", component_id_string);
+		//printf("component_id_string: %s\n", component_id_string);
       if (!(status != ERROR_SUCCESS || data_type != REG_SZ)) {
         len = sizeof (net_cfg_instance_id);
         status = RegQueryValueEx(unit_key,
@@ -662,10 +667,12 @@ static void on_close(uv_handle_t* peer);
 
 static int step = 0;
 static void after_write(uv_write_t* req, int status) {
+	printf("after_write!!!!!!!!!!!!!!\n");
   write_req_t* wr;
 
-  if (step > 10) {
+  if (step > 100) {
     uv_stream_t *s = (uv_stream_t*) req->handle;
+	printf("uv_read_stop\n");
     uv_read_stop(s);
   }
   /* Free the read/write buffer and the request */
@@ -697,6 +704,13 @@ static void after_read(uv_stream_t* handle,
                        ssize_t nread,
                        const uv_buf_t* buf) {
   printf("after_read!!!!!!!!!!!!!!!\n");
+  printf("nread = %d\n", nread);
+  printf("buf->len: %d\n", buf->len);
+  if(nread > 100) {
+	  for(int i = 0; i < nread; ++i)
+		  printf("%c", buf->base[i]);
+	  printf("\n");
+  }
   write_req_t *wr;
     
   //printf("buff: \n");
@@ -735,6 +749,7 @@ static void after_read(uv_stream_t* handle,
 
   wr = (write_req_t*) malloc(sizeof *wr);
   ASSERT(wr != NULL);
+  printf("create write packet\n");
   wr->buf = uv_buf_init(buf->base, nread);
 
   /*if (uv_write(&wr->req, handle, &wr->buf, 1, after_write)) {
@@ -742,9 +757,11 @@ static void after_read(uv_stream_t* handle,
     abort();
   }*/
   printf("uv_read_start\n");
-  uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
+  //uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
+  uv_read_start((uv_stream_t*) &device, echo_alloc, after_read);
   printf("end uv_read_start\n");
-  uv_device_queue_read(loop, &device_tap2);
+  //uv_device_queue_read(loop, &device_tap2);
+  uv_device_queue_read(loop, &device);
 }
 
 static void on_close(uv_handle_t* peer) {
@@ -773,7 +790,7 @@ void at_exit(uv_process_t *req, int64_t exit_status, int term_signal) {
 
 int main() {
   #define BUF_SZ 1024
-  uv_device_t device;
+  //uv_device_t device;
   char buff[BUF_SZ] = {0};
 #if defined (_WIN32) || defined (__CYGWIN__)
   char guid[BUF_SZ] = "DC79795F-2F54-408B-A913-512C04BBE1D1";
@@ -812,8 +829,8 @@ int main() {
   char tap2_filename[] = "\\\\.\\Global\\{DC79795F-2F54-408B-A913-512C04BBE1D1}.tap";
   loop = uv_default_loop();
 
-  r = uv_device_init(loop, &device_tap2, tap2_filename, O_RDWR); // XXX
-  //r = uv_device_init(loop, &device, buff, O_RDWR);
+  //r = uv_device_init(loop, &device_tap2, tap2_filename, O_RDWR); // XXX
+  r = uv_device_init(loop, &device, buff, O_RDWR);
   printf("%d\n", r);
   ASSERT(r == 0);
 
@@ -871,8 +888,8 @@ int main() {
     ioarg.output_len = sizeof(version);
     ioarg.output = (void*) version;
 
-    //r = uv_device_ioctl(&device, TAP_IOCTL_GET_VERSION, &ioarg);
-    r = uv_device_ioctl(&device_tap2, TAP_IOCTL_GET_VERSION, &ioarg);
+    r = uv_device_ioctl(&device, TAP_IOCTL_GET_VERSION, &ioarg);
+    //r = uv_device_ioctl(&device_tap2, TAP_IOCTL_GET_VERSION, &ioarg);
     ASSERT(r >= 0);
     printf("version: %d.%d.%d\n",version[0],version[1],version[2]);
 
@@ -884,8 +901,8 @@ int main() {
     ioarg.output_len = sizeof(p2p);
     ioarg.output = (void*) &p2p;
 
-    //r = uv_device_ioctl(&device, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
-    r = uv_device_ioctl(&device_tap2, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
+    r = uv_device_ioctl(&device, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
+    //r = uv_device_ioctl(&device_tap2, TAP_IOCTL_CONFIG_POINT_TO_POINT, &ioarg);
     ASSERT(r >= 0);
 
     ioarg.input_len = sizeof(enable);
@@ -893,8 +910,8 @@ int main() {
     ioarg.output_len = sizeof(enable);
     ioarg.output = (void*) &enable;
 
-    //r = uv_device_ioctl(&device, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
-    r = uv_device_ioctl(&device_tap2, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
+    r = uv_device_ioctl(&device, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
+    //r = uv_device_ioctl(&device_tap2, TAP_IOCTL_SET_MEDIA_STATUS, &ioarg);
     ASSERT(r >= 0);
 
     args[0] = "ping";
@@ -915,21 +932,21 @@ int main() {
     child_stdio[2].data.fd = fileno(stderr);
     options.stdio = child_stdio;
 
-    if (uv_spawn(loop, &child_req, &options)) {
+    /*if (uv_spawn(loop, &child_req, &options)) {
       fprintf(stderr, "uv_spawn ping fail\n");
       return 1;
-    }
+    }*/
     fprintf(stderr, "Launched ping with PID %d\n", child_req.pid);
     uv_unref((uv_handle_t*) &child_req);
   }
 #endif
 
-	uv_fs_event_t ereq;
-	uv_fs_event_init(loop, &ereq);
-	uv_fs_event_start(&ereq, evevnt_cb, tap2_filename, UV_FS_EVENT_RECURSIVE);
+	//uv_fs_event_t ereq;
+	//uv_fs_event_init(loop, &ereq);
+	//uv_fs_event_start(&ereq, evevnt_cb, tap2_filename, UV_FS_EVENT_RECURSIVE);
 	printf("uv_read_start\n");
-  //r = uv_read_start((uv_stream_t*) &device, echo_alloc, after_read);
-  r = uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
+  r = uv_read_start((uv_stream_t*) &device, echo_alloc, after_read);
+  //r = uv_read_start((uv_stream_t*) &device_tap2, echo_alloc, after_read);
   ASSERT(r == 0);
   #if defined (_WIN32) || defined (__CYGWIN__)
   //for (int i = 0; i < 5; ++i) {

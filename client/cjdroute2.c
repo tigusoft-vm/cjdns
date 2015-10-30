@@ -762,7 +762,7 @@ static int get_device_guid(char *name,
   return 0;
 }
 
-const char* TAPDevice_find(char* preferredName,
+static const char* TAPDevice_find(char* preferredName,
                            int nlen,
                            char* buffguid,
                            int len) {
@@ -1038,13 +1038,14 @@ int main_test_libuv() // TODO(rfree) remove this and all the test code here
 
 int main(int argc, char** argv)
 {
+	printf("TEST 4 in %s \n\n\n",__FILE__); 	return ;  // XXX
 
-	if (argc>=2) { // temporary code to test libuv directly from this program
+	/*if (argc>=2) { // temporary code to test libuv directly from this program
 		if (0 == strcmp(argv[1],"--testlibuv")) {
 			main_test_libuv();
 			return 0;
 		}
-	}
+	}*/
 
     #ifdef Log_KEYS
         fprintf(stderr, "Log_LEVEL = KEYS, EXPECT TO SEE PRIVATE KEYS IN YOUR LOGS!\n");

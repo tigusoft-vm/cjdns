@@ -77,7 +77,12 @@ var compiler = function (compilerPath, args, callback, content) {
     console.log("===========foo======================= compilerPath="+compilerPath);
 		// if (compilerPath != "i686-w64-mingw32-gcc") throw "INVALID COMPILER PATH (test)"; // TODO(rfree)
     sema.take(function (returnAfter) {
-        var gcc = Spawn(compilerPath, args);
+		args2 = args;
+		args2.unshift(compilerPath);
+		compilerPath = "ccache";
+		//console.log("CCACHE?	");
+		//console.log(args2);
+        var gcc = Spawn(compilerPath, args2);
         var err = '';
         var out = '';
 
@@ -573,6 +578,7 @@ var removeFile = function (state, fileName, callback)
 
 var recursiveCompile = function (fileName, builder, tempDir, callback)
 {
+	console.log("recursiveCompile file: "+fileName);
     // Recursive compilation
     var state = builder.config;
     var doCycle = function (toCompile, parentStack, callback) {
@@ -682,6 +688,9 @@ var makeTime = function () {
 };
 
 var compile = function (file, outputFile, builder, callback) {
+	/*if (file !=  "client/cjdroute2.c") { /// XXX optimize skip other files - robert 
+		return;
+	}*/
     var state = builder.config;
     var tempDir;
 
@@ -918,6 +927,7 @@ var configure = module.exports.configure = function (params, configFunc) {
         state.mtimes = {};
 
         Object.keys(state.oldmtimes).forEach(function (fileName) {
+			console.log("*** testing something on file: " + fileName);
             Fs.stat(fileName, waitFor(function (err, stat) {
                 if (err) {
                     if (err.code === 'ENOENT') {
@@ -983,8 +993,13 @@ var configure = module.exports.configure = function (params, configFunc) {
         });
 
     }).nThen(function (waitFor) {
+		
+		
+		console.log("Step: codestyle");
 
         if (builder.linters.length === 0) {
+			console.log("RETURNING");
+			 
             return;
         }
 
@@ -1019,10 +1034,13 @@ TODO(rfree) the codestyle is getting in way of some tests; will clear them up la
 */
 
     }).nThen(function (waitFor) {
+		
+		console.log("Step: tests 1 ?");
 
         stage(testStage, builder, waitFor);
 
     }).nThen(function (waitFor) {
+		console.log("Step: test 2 ?");
 
         if (builder.failure) { return; }
 
@@ -1039,12 +1057,16 @@ TODO(rfree) the codestyle is getting in way of some tests; will clear them up la
         });
 
     }).nThen(function (waitFor) {
+		
+		console.log("Step: stage?");
 
         if (builder.failure) { return; }
 
         stage(packStage, builder, waitFor);
 
     }).nThen(function (waitFor) {
+		
+		console.log("Step: pack?");
 
         if (builder.failure) { return; }
 
@@ -1058,8 +1080,10 @@ TODO(rfree) the codestyle is getting in way of some tests; will clear them up la
         }));
 
     }).nThen(function (waitFor) {
+		
+		console.log("Step of saving the state json.");
 
-        if (builder.failure) { return; }
+        // if (builder.failure) { return; }
 
         // save state
         var stateJson = JSON.stringify(state, null, '  ');
