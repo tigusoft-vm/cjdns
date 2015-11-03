@@ -1003,9 +1003,7 @@ var configure = module.exports.configure = function (params, configFunc) {
             return;
         }
 
-/*
-TODO(rfree) the codestyle is getting in way of some tests; will clear them up later
-
+if (process.env['NO_CODESTYLE'] != '1') {
         debug("Checking codestyle");
 
         var sema = Semaphore.create(64);
@@ -1031,7 +1029,7 @@ TODO(rfree) the codestyle is getting in way of some tests; will clear them up la
                 }));
             }));
         });
-*/
+}
 
     }).nThen(function (waitFor) {
 		
