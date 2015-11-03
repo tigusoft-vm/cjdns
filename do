@@ -15,12 +15,15 @@
 
 
 function show_usage() {
+	echo "Usage:"
 	echo <<"EOF"
 This script is the main build command, it handles dependencies and all,
 and creates the cjdroute binary program (and other tools).
 
 If you are a developer on winows, you could use this command to have fast rebuilds (explained below)
 NO_TEST=1 ./do
+  or
+NO_TEST=1 NO_GIT_UPDATE=1 ./do
 
 * option -v (must be first option) exits after showing platform information
 
