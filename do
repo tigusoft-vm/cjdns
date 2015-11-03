@@ -21,8 +21,6 @@ and creates the cjdroute binary program (and other tools).
 
 If you are a developer on winows, you could use this command to have fast rebuilds (explained below)
 NO_TEST=1 ./do
-  or
-NO_TEST=1 NO_GIT_UPDATE=1 ./do
 
 * option -v (must be first option) exits after showing platform information
 
@@ -30,7 +28,6 @@ On e.g. Windows while build is a bit broken, try this advanced options to make r
 
 * NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds (just rebuild changed files)
 even when unite tests are failing which usually forbids caching of build results (in state.json).
-* NO_GIT_UPDATE=1 skips updating git submodules = a bit faster rebuilds (e.g. on cygwin)
 
 * NO_CODESTYLE=1 this is just for very slopy developers who want to quickly ignore any codestyle errors
 and just build the hacked up dirty code ;) BUT: fix your code before commiting it to git / making PR to cjd!!"
