@@ -13,11 +13,36 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+
+#
+# === help ===
+#
+# This is the main build command, it handles dependencies and all,
+# and creates the cjdroute binary program (and other tools)
+#
+# It supports few advanced options needed in some cases:
+#
+# * option -v (must be first option) exits after showing platform information
+# * NO_GIT_UPDATE=1 skips updating git submodules = a bit faster rebuilds (e.g. on cygwin)
+# * NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds
+# even when unite tests are failing.
+# Normally failing unit test casues build system to not save the state.json file and therefore
+# on next rebuild entire project is build from scratch (slow). This options skips the unit tests.
+# * NO_CODESTYLE=1 this is just for very slopy developers who want to quickly ignore any codestyle errors
+# and just build the hacked up dirty code ;) BUT: fix your code before commiting it to git / making PR to cjd!!
+#
+
+[[ "$1" == "-h" ]] \
+    && { echo "To see Help: open this file ($0) in text editor and read comments."; exit; }
+
 [[ -n "$PLATFORM" ]] \
     || PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
 
 [[ -n "$MARCH" ]] \
     || MARCH=$(uname -m | sed 's/i./x/g')
+
+echo "Running on PLATFORM=[$PLATFORM] MARCH=[$MARCH]"
+[[ "$1" == "-v" ]] && exit;
 
 build_dir="build_$PLATFORM"
 node_min_ver='v0.8.15'
