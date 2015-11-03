@@ -112,6 +112,10 @@ Builder.configure({
         }
     }
 
+	if (process.env['NO_TEST'] === '1') {
+		builder.config.cflags.push('-D', 'NOTEST=1');
+	}
+	
     if (/clang/i.test(builder.config.gcc) || builder.config.systemName === 'darwin') {
         // blows up when preprocessing before js preprocessor
         builder.config.cflags.push(
