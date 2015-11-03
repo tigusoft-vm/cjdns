@@ -1042,6 +1042,7 @@ var configure = module.exports.configure = function (params, configFunc) {
             return;
         }
 
+if (process.env['NO_CODESTYLE'] != '1') {
         debug("Checking codestyle");
 
         var sema = Semaphore.create(64);
@@ -1067,6 +1068,7 @@ var configure = module.exports.configure = function (params, configFunc) {
                 }));
             }));
         });
+}
 
     }).nThen(function (waitFor) {
 
