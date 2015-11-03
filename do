@@ -20,14 +20,14 @@
 # This is the main build command, it handles dependencies and all,
 # and creates the cjdroute binary program (and other tools)
 #
-# It supports few advanced options needed in some cases:
-#
 # * option -v (must be first option) exits after showing platform information
+#
+# On e.g. Windows while build is a bit broken, try this advanced options to make rebuilds fast again:
+#
+# * NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds (just rebuild changed files)
+# even when unite tests are failing which usually forbids caching of build results (in state.json).
 # * NO_GIT_UPDATE=1 skips updating git submodules = a bit faster rebuilds (e.g. on cygwin)
-# * NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds
-# even when unite tests are failing.
-# Normally failing unit test casues build system to not save the state.json file and therefore
-# on next rebuild entire project is build from scratch (slow). This options skips the unit tests.
+#
 # * NO_CODESTYLE=1 this is just for very slopy developers who want to quickly ignore any codestyle errors
 # and just build the hacked up dirty code ;) BUT: fix your code before commiting it to git / making PR to cjd!!
 #
@@ -42,7 +42,10 @@
     || MARCH=$(uname -m | sed 's/i./x/g')
 
 echo "Running on PLATFORM=[$PLATFORM] MARCH=[$MARCH]"
+[[ "$PLATFORM" =~ cygwin.*|msys.* ]] \
+	&& echo -e "\n\nOn Windows.\nIf you're a devel, see options (-h) for fast rebuilds.\n\n";
 [[ "$1" == "-v" ]] && exit;
+
 
 build_dir="build_$PLATFORM"
 node_min_ver='v0.8.15'
