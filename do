@@ -14,26 +14,30 @@
 #
 
 
-#
-# === help ===
-#
-# This is the main build command, it handles dependencies and all,
-# and creates the cjdroute binary program (and other tools)
-#
-# * option -v (must be first option) exits after showing platform information
-#
-# On e.g. Windows while build is a bit broken, try this advanced options to make rebuilds fast again:
-#
-# * NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds (just rebuild changed files)
-# even when unite tests are failing which usually forbids caching of build results (in state.json).
-# * NO_GIT_UPDATE=1 skips updating git submodules = a bit faster rebuilds (e.g. on cygwin)
-#
-# * NO_CODESTYLE=1 this is just for very slopy developers who want to quickly ignore any codestyle errors
-# and just build the hacked up dirty code ;) BUT: fix your code before commiting it to git / making PR to cjd!!
-#
+function show_usage() {
+	echo <<"EOF"
+This script is the main build command, it handles dependencies and all,
+and creates the cjdroute binary program (and other tools).
+
+If you are a developer on winows, you could use this command to have fast rebuilds (explained below)
+NO_TEST=1 ./do
+
+* option -v (must be first option) exits after showing platform information
+
+On e.g. Windows while build is a bit broken, try this advanced options to make rebuilds fast again:
+
+* NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds (just rebuild changed files)
+even when unite tests are failing which usually forbids caching of build results (in state.json).
+* NO_GIT_UPDATE=1 skips updating git submodules = a bit faster rebuilds (e.g. on cygwin)
+
+* NO_CODESTYLE=1 this is just for very slopy developers who want to quickly ignore any codestyle errors
+and just build the hacked up dirty code ;) BUT: fix your code before commiting it to git / making PR to cjd!!
+EOF
+}
+
 
 [[ "$1" == "-h" ]] \
-    && { echo "To see Help: open this file ($0) in text editor and read comments."; exit; }
+    && { show_usage; exit; }
 
 [[ -n "$PLATFORM" ]] \
     || PLATFORM=$(uname | tr '[:upper:]' '[:lower:]')
@@ -43,7 +47,7 @@
 
 echo "Running on PLATFORM=[$PLATFORM] MARCH=[$MARCH]"
 [[ "$PLATFORM" =~ cygwin.*|msys.* ]] \
-	&& echo -e "\n\nOn Windows.\nIf you're a devel, see options (-h) for fast rebuilds.\n\n";
+	&& echo -e "\n\n\nOn Windows.\nIf you're a devel, see options (-h) for fast rebuilds!\n\n\n\n";
 [[ "$1" == "-v" ]] && exit;
 
 
