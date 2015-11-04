@@ -29,7 +29,7 @@ On e.g. Windows while build is a bit broken, try this advanced options to make r
 * NO_TEST=1 for e.g. on-Windows developers to have fast code rebuilds (just rebuild changed files)
 even when unite tests are failing which usually forbids caching of build results (in state.json).
 
-* NO_CODESTYLE=1 this is just for very slopy developers who want to quickly ignore any codestyle errors
+* NO_CODESTYLE=1 this is just for very sloppy developers who want to quickly ignore any codestyle errors
 and just build the hacked up dirty code ;) BUT: fix your code before commiting it to git / making PR to cjd!!"
 }
 
