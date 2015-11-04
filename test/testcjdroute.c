@@ -42,14 +42,14 @@ static uint64_t runTest(Test test,
 {
     fprintf(stderr, "Running test %s", name);
 
-	#if NOTEST==1
-	{
-		fprintf(stderr, "SKIPPING THE TEST! Running test %s", name);
-		uint64_t now = Time_hrtime();
-		return now;
-	}
-	#endif
-	
+    #if NOTEST==1
+    {
+        fprintf(stderr, "SKIPPING THE TEST! Running test %s", name);
+        uint64_t now = Time_hrtime();
+        return now;
+    }
+    #endif
+
     Assert_true(!test(argc, argv));
     uint64_t now = Time_hrtime();
     char* seventySpaces = "                                                                      ";
