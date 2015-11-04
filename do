@@ -15,7 +15,7 @@
 
 
 function show_usage() {
-	echo "Usage:
+    echo "Usage:
 This script is the main build command, it handles dependencies and all,
 and creates the cjdroute binary program (and other tools).
 
@@ -45,7 +45,7 @@ and just build the hacked up dirty code ;) BUT: fix your code before commiting i
 
 echo "Running on PLATFORM=[$PLATFORM] MARCH=[$MARCH]"
 [[ "$PLATFORM" =~ cygwin.*|msys.* ]] \
-	&& echo -e "\n\n\nOn Windows.\nIf you're a devel, see options (-h) for fast rebuilds!\n\n\n\n";
+    && echo -e "\n\n\nOn Windows.\nIf you're a devel, see options (-h) for fast rebuilds!\n\n\n\n";
 [[ "$1" == "-v" ]] && exit;
 
 
