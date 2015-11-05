@@ -113,8 +113,11 @@ The compiler expects GCC version 4.7, please install it from ports first.
 
 Clone the repository from GitHub and change to the source directory:
 
-    git clone https://github.com/cjdelisle/cjdns.git cjdns
+    git clone https://github.com/cjdelisle/cjdns.git cjdns --recursive
     cd cjdns
+
+ The option "--recursive" is there because we now use git submodules,
+ you can read more details here in [doc/git-submodule.txt](doc/git-submodule.txt)
 
 ### 2. Build
 
