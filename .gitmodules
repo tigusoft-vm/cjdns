@@ -1,3 +1,9 @@
+
+# Here we use git submodules!
+#
+# Read all details how this works in:
+# doc/git-submodule.txt
+
 [submodule "libuv"]
 	path = node_build/dependencies/libuv
 	url = ../libuv.git 
