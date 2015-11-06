@@ -44,7 +44,9 @@ static uint64_t runTest(Test test,
 
     #if NOTEST==1
     {
-        fprintf(stderr, "SKIPPING THE TEST (disabled by compilation options)! we are *NOT* Running test %s", name);
+        fprintf(stderr,
+          "SKIPPING THE TEST (disabled by compilation options)! we are *NOT* Running test %s",
+           name);
         uint64_t now = Time_hrtime();
         return now;
     }
