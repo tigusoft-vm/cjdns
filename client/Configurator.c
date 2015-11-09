@@ -211,7 +211,14 @@ static void udpInterface(Dict* config, struct Context* ctx)
                                                "is not a dictionary type.", key->bytes);
                     exit(-1);
                 }
-                Dict* value = entry->val->as.dictionary;
+                Dict* all =  entry->val->as.dictionary;
+                Dict* value = Dict_new(perCallAlloc);
+                String* pub_d = Dict_getString(all, String_CONST("publicKey"));
+                String* pss_d = Dict_getString(all, String_CONST("password"));
+
+                Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
+                Dict_putString(value, String_CONST("password"), pss_d, perCallAlloc);
+
                 Log_keys(ctx->logger, "Attempting to connect to node [%s].", key->bytes);
                 key = String_clone(key, perCallAlloc);
                 char* lastColon = CString_strrchr(key->bytes, ':');
