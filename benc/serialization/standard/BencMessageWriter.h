@@ -22,5 +22,6 @@
 Linker_require("benc/serialization/standard/BencMessageWriter.c")
 
 void BencMessageWriter_write(Dict* toWrite, struct Message* msg, struct Except* eh);
+void BencMessageWriter_writeDict(Dict* d, struct Message* msg, struct Except* eh);
 
 #endif
