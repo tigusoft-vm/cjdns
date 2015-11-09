@@ -17,6 +17,7 @@
 
 #include "benc/String.h"
 #include "benc/Dict.h"
+#include "benc/serialization/standard/BencMessageWriter.h"
 #include "memory/Allocator.h"
 #include "util/log/Log.h"
 #include "util/events/EventBase.h"

@@ -66,6 +66,13 @@ static void writeDict(Dict* d, struct Message* msg, struct Except* eh)
     Message_push8(msg, 'd', eh);
 }
 
+void BencMessageWriter_writeDict(Dict* d, struct Message* msg, struct Except* eh)
+{
+    Message_push8(msg, 'e', eh);
+    writeDictEntries(*d, msg, eh);
+    Message_push8(msg, 'd', eh);
+}
+
 static void writeGeneric(Object* obj, struct Message* msg, struct Except* eh)
 {
     switch (obj->type) {
