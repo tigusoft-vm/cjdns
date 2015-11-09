@@ -215,9 +215,11 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 Dict* value = Dict_new(perCallAlloc);
                 String* pub_d = Dict_getString(all, String_CONST("publicKey"));
                 String* pss_d = Dict_getString(all, String_CONST("password"));
+                String* peerName_d = Dict_getString(all, String_CONST("peerName"));
 
                 Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
                 Dict_putString(value, String_CONST("password"), pss_d, perCallAlloc);
+                Dict_putString(value, String_CONST("peerName"), peerName_d, perCallAlloc);
 
                 Log_keys(ctx->logger, "Attempting to connect to node [%s].", key->bytes);
                 key = String_clone(key, perCallAlloc);
