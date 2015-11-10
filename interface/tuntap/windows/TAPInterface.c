@@ -45,8 +45,6 @@
 #define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
 
 
-#if 0
-// TODO(rfree) fix TAP for uv_device
 
 struct TAPInterface_Version_pvt {
     unsigned long major;
@@ -297,6 +295,4 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     return &tap->pub;
 }
 
-
-#endif
 
