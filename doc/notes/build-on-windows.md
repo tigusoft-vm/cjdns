@@ -82,6 +82,17 @@ Edit `node_build/dependencies/libuv/Makefile` so that it will use the mingw gcc 
 
 Then run `./do` to build
 
+If do you have any problem with compile libuv (with gyp) do this (in generated build_win32 or node_build [./dependencies/]):
+in folder gyp:
+```
+python setup.py install
+```
+in folder libuv:
+```
+python gyp_uv.py
+```
+After this run ./do again.
+
 The system churns for a while, hopefully producing no errors. It will eventually tell you it's time to run `cjdroute`. It lies.
 
 `cp build_win32/admin_angel_cjdroute2_c.exe cjdroute.exe`
