@@ -12,6 +12,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+// to get and log the version of library:
+#include "uv-version.h"
+
 #include "client/AdminClient.h"
 #include "admin/angel/Core.h"
 #include "admin/angel/InterfaceWaiter.h"
@@ -613,6 +617,9 @@ int main(int argc, char** argv)
     // --------------------- Welcome to cjdns ---------------------- //
     char* sysInfo = SysInfo_describe(SysInfo_detect(), allocator);
     Log_info(logger, "Cjdns %s %s", ArchInfo_getArchStr(), sysInfo);
+    Log_info(logger," Cjdns uses libuv: %d.%d.%d%s %s",
+                UV_VERSION_MAJOR, UV_VERSION_MINOR, UV_VERSION_PATCH, UV_VERSION_SUFFIX,
+                ( UV_VERSION_IS_RELEASE ? "(release)" : "(test version)" ));
 
     // --------------------- Check for running instance  --------------------- //
 

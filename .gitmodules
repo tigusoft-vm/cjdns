@@ -1,10 +1,15 @@
+
+# Here we use git submodules!
+#
+# Read all details how this works in:
+# doc/git-submodule.txt
+
 [submodule "libuv"]
 	path = node_build/dependencies/libuv
-	url = https://github.com/libuv/libuv.git 
-	branch = v1.x
+	url = ../libuv.git 
+	branch =  cjdns_libuv_apicjd
 
 [submodule "gyp"]
 	path = node_build/dependencies/gyp
 	url = https://chromium.googlesource.com/external/gyp
 	branch = master
-

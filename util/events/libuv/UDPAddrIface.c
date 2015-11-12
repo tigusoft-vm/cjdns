@@ -253,6 +253,7 @@ struct UDPAddrIface* UDPAddrIface_new(struct EventBase* eventBase,
     if (addr) {
         Log_debug(logger, "Binding to address [%s]", Sockaddr_print(addr, alloc));
     }
+    else Log_debug(logger, "UDP Interface with no new address");
 
     struct Sockaddr_storage ss;
     if (!addr) {
@@ -265,7 +266,9 @@ struct UDPAddrIface* UDPAddrIface_new(struct EventBase* eventBase,
 
     int ret;
     void* native = Sockaddr_asNative(addr);
-    ret = uv_udp_bind(&context->uvHandle, (const struct sockaddr*)native, 0);
+
+    ret = uv_udp_bind(&context->uvHandle, (const struct sockaddr*)native, UV_UDP_REUSEADDR);
+    Log_debug(logger, "uv_udp_bind returned %d", ret);
 
     if (ret) {
         Except_throw(exHandler, "call to uv_udp_bind() failed [%s]",
