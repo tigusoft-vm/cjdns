@@ -45,6 +45,7 @@
 #define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
 
 
+
 struct TAPInterface_Version_pvt {
     unsigned long major;
     unsigned long minor;
@@ -293,3 +294,5 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 
     return &tap->pub;
 }
+
+

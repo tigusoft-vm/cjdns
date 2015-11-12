@@ -1,0 +1,104 @@
+
+We now use git submodules,
+just clone with --recursive and you are all set,
+and if you are a developer then also fork not just "cjdns" but also "libuv" and "gyp" 
+to your git server.
+
+
+Or read below for more details.
+
+
+
+
+We use git submodules because cjdns in fact links to big external projects: libuv, gyp, nacl,
+and notably it does own mofydications to libuv (at least for now).
+Since they all are in git too, git submodule is an easy approach for this (see
+below for pros/cons)
+
+=== HOW TO USE ===
+
+1) Regular users: no problem just do git clone YOUR_URL --recursive 
+and that is all, nothing to worry about, e.g.:
+git clone https://github.com/cjdelisle/cjdns.git  --recursive
+
+If you did a clone without --recursive, then you can instead in this directory
+execute git command: 
+git submodule update --init --recursive
+
+2) Developers: if you wish to fork to own git repository a copy of cjdns,
+then also fork this repositories listed in file ".gitmodules", 
+fork also:
+- libuv
+- gyp 
+- nacl in future (when it is listed in .gitsubmodules)
+
+  Clone them from same place where you cloned the cjdns from,
+  e.g. from https://github.com/cjdelisle/cjdns.git
+  or from gitboria or bitbucket.org
+  or from your server like git@you.name.hyper/git/bob/cjdns.git
+
+and that is all. Then this deps are downloaded from git repos on the
+same server where ever you cloned cjdroute from.
+
+Develop cjdroute as you usually do.
+If there would be a need to e.g. hack/patch the dependency library (e.g. if we
+would need to bugfix it ourselves) then you can do it easily in your own repository
+and this cjdroute build will use it.
+
+=== Developers that wish to select other version of dependency ===
+
+To update a dependency you could simply:
+cd node_build/dependencies/libuv ; git pull ; cd .. ; git commit -a 
+
+Explanation:
+enter the directory listed in .gitmodules like node_build/dependencies/libuv
+do git fetch there, or merge, or pull etc to end up with the version of libuv
+that you wish to use. 
+
+Confirm with "git log" this is the correct version.
+
+Then go up, to node_build/ for example, and then do "git status" - see, git noticed
+you want to use new version of that external repository. Just do git commit to commit/save
+that decission (that choice of dependency) and git push it.
+
+=== Developers who wish to develop/patch a dependency ===
+
+This is rather easy with git submodules.
+Go to working dir of the other project, e.g. of libuv, do your changes there, commit&push.
+Go to working dir of cjdns, cd ..../libuv ; git pull ; cd .. ; git commit (as written above)
+and then test this new version.
+I recommend bash alias shortcuts for comfortable work.
+
+Now we can more easily present the patches to upstream of dependencies like libuv.
+
+=== Pros/cons ===
+
+Positive and negative sides of using git submodules:
+
++ you do not clutter your project with code from other projects resulting in worse git history, git log,
+git blame, bisecting bugs in the dependency etc.
++ created patches in dependencies can be easily isolated and presented to their upstream, they are already in a nice repo
++ because we use relative path in .gitmodules, this works well with any other servers
++ so of course it can be used with your repo on gitboria, on private server, on some .onion or .i2p server, anything
++ easy verification that we include correct code of external projects, from some trusted source known by git version checksum
++ entire external code is therefore secured with git hash (e.g. sha1) which is triviall to check
++ our changes to external deps, from some known-trusted-version of them, is trivial to see with git diff and alike
++ our changes to external deps can be also GPG signed (git commit -S)
++ github.com stats will cease to report cjdns as 50% assembler code (thanks libnacl) ;P
++ upgrading externals to higher versions does not need diff of ---10,000 lines and +++10,000 lines
+
+= almost as easy to download, just add --recursive to the git clone
+= if user forgets --recursive, then the ./do script does it
+= the ./do script can also skip git download by using command "NO_GIT_UPDATE=1 ./do" so this 
+will not block usage of ./do for some source-bundles.zip, which some packagers might need
+= using the code without access to git is not hard, the author of some cjdns-bundle-with-deps.zip just would need
+to do git clone .. --recursive, and then remove .git and pack that.
+
+- only if you miss --recursive, and skip README and the README with large file name, then you can not build
+cjdns offline until you have chance to be online
+- we now pull in entire git history also of the submodules by default (thought --depth 1 works as well
+here as without submodules, will skip history of submodules too)
+- quick hacking on deps like libuv now requires to first commit to the other repo and is a bit slower (but more organized)
+
+
+
