@@ -16,6 +16,7 @@
 #include "client/Configurator.h"
 #include "benc/String.h"
 #include "benc/Dict.h"
+#include "benc/serialization/standard/BencMessageWriter.h"
 #include "benc/Int.h"
 #include "benc/List.h"
 #include "memory/Allocator.h"
