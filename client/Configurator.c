@@ -248,9 +248,10 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 }
                 struct Allocator* child = Allocator_child(ctx->alloc);
                 struct Message* msg = Message_new(0, AdminClient_MAX_MESSAGE_SIZE + 256, child);
-                BencMessageWriter_writeDict(value, msg, NULL);
+                int r = BencMessageWriter_writeDict(value, msg, NULL);
+
                 const int max_reference_size = 298;
-                if (msg->length > max_reference_size) {
+                if (r != 0 || msg->length > max_reference_size) {
                     Log_warn(ctx->logger, "Peer skipped:");
                     Log_warn(ctx->logger, "Too long peer reference for [%s]", key->bytes);
                     entry = entry->next;

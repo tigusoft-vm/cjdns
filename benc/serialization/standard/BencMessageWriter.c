@@ -18,6 +18,7 @@
 #include "benc/Dict.h"
 #include "benc/List.h"
 #include "exception/Except.h"
+#include "exception/Jmp.h"
 #include "wire/Message.h"
 #include "util/Base10.h"
 
@@ -66,9 +67,15 @@ static void writeDict(Dict* d, struct Message* msg, struct Except* eh)
     Message_push8(msg, 'd', eh);
 }
 
-void BencMessageWriter_writeDict(Dict* d, struct Message* msg, struct Except* eh)
+int BencMessageWriter_writeDict(Dict* d, struct Message* msg, struct Except* eh)
 {
-    writeDict(d, msg, eh);
+    struct Jmp jmp;
+    Jmp_try(jmp) {
+        writeDict(d, msg, &jmp.handler);
+        return 0;
+    } Jmp_catch {
+        return 1;
+    }
 }
 
 static void writeGeneric(Object* obj, struct Message* msg, struct Except* eh)
