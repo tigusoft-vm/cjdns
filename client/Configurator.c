@@ -43,6 +43,8 @@ struct Context
     struct EventBase* base;
 };
 
+const int abort_if_long_ref = 1;
+
 static void rpcCallback(struct AdminClient_Promise* p, struct AdminClient_Result* res)
 {
     struct Context* ctx = p->userData;
@@ -267,8 +269,13 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 if (r != 0 || msg->length > max_reference_size) {
                     Log_warn(ctx->logger, "Peer skipped:");
                     Log_warn(ctx->logger, "Too long peer reference for [%s]", key->bytes);
-                    entry = entry->next;
-                    continue;
+                    if (abort_if_long_ref) {
+                        Assert_failure("Too long peer reference");
+                    }
+                    else {
+                        entry = entry->next;
+                        continue;
+                    }
                 }
                 Dict_putInt(value, String_CONST("interfaceNumber"), ifNum, perCallAlloc);
                 Dict_putString(value, String_CONST("address"), key, perCallAlloc);
