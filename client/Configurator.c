@@ -218,14 +218,14 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 String* pss_d = Dict_getString(all, String_CONST("password"));
                 String* peerName_d = Dict_getString(all, String_CONST("peerName"));
 
-		if ( ! pub_d ) {
-                    Log_warn(ctx->logger, 
+        if ( ! pub_d ) {
+                    Log_warn(ctx->logger,
                         "Skipping peer: missing publicKey for peer [%s]", key->bytes);
                     entry = entry->next;
                     continue;
                 }
-		if ( ! pss_d ) {
-                    Log_warn(ctx->logger, 
+        if ( ! pss_d ) {
+                    Log_warn(ctx->logger,
                         "Skipping peer: missing password for peer [%s]", key->bytes);
                     entry = entry->next;
                     continue;
@@ -261,7 +261,7 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 }
                 struct Allocator* child = Allocator_child(ctx->alloc);
                 struct Message* msg = Message_new(0, AdminClient_MAX_MESSAGE_SIZE + 256, child);
-                int r = BencMessageWriter_writeDict(value, msg, NULL);
+                int r = BencMessageWriter_writeDictTry(value, msg, NULL);
 
                 const int max_reference_size = 298;
                 if (r != 0 || msg->length > max_reference_size) {

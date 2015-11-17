@@ -28,6 +28,6 @@ void BencMessageWriter_write(Dict* toWrite, struct Message* msg, struct Except* 
  * so that we can use it from other places to estimate if reference
  * will fit in admin UDP packet
  */
-int BencMessageWriter_writeDict(Dict* d, struct Message* msg, struct Except* eh);
+int BencMessageWriter_writeDictTry(Dict* d, struct Message* msg, struct Except* eh);
 
 #endif
