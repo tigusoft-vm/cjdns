@@ -19,7 +19,6 @@
 #include "exception/Except.h"
 #include "wire/Message.h"
 #include "util/Linker.h"
-#include <stdio.h>
 Linker_require("benc/serialization/standard/BencMessageWriter.c")
 
 void BencMessageWriter_write(Dict* toWrite, struct Message* msg, struct Except* eh);

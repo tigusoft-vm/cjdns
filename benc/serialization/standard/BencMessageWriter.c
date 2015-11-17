@@ -67,7 +67,15 @@ static void writeDict(Dict* d, struct Message* msg, struct Except* eh)
     Message_push8(msg, 'd', eh);
 }
 
-int BencMessageWriter_writeDict(Dict* d, struct Message* msg, struct Except* eh)
+/**
+ * Tries to send a message same as in writeDic() but in case of some problems
+ * where it would throw, it instead returns non-zero value to indicate error:
+ * return 1 - there was an error
+ * return 0 - no error was detected, but still no guarantee if message was sent,
+ * some errors like message not fitting UDP-admin-packet size are NOT detected
+ * (therefore you should detect them in caller function)
+ */
+int BencMessageWriter_writeDictTry(Dict* d, struct Message* msg, struct Except* eh)
 {
     struct Jmp jmp;
     Jmp_try(jmp) {
