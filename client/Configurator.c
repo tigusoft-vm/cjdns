@@ -43,7 +43,7 @@ struct Context
     struct EventBase* base;
 };
 
-const int abort_if_long_ref = 1;
+const int abort_if_invalid_ref = 1;
 
 static void rpcCallback(struct AdminClient_Promise* p, struct AdminClient_Result* res)
 {
@@ -220,17 +220,23 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 String* pss_d = Dict_getString(all, String_CONST("password"));
                 String* peerName_d = Dict_getString(all, String_CONST("peerName"));
 
-                if ( ! pub_d ) {
+                if ( !pub_d || !pss_d ) {
+                    const char * error_name = "(unknown)";
+                    if ( !pub_d ) {
+                        error_name = "publicKey";
+                    }
+                    if ( !pss_d ) {
+                        error_name = "password";
+                    }
                     Log_warn(ctx->logger,
-                        "Skipping peer: missing publicKey for peer [%s]", key->bytes);
-                    entry = entry->next;
-                    continue;
-                }
-                if ( ! pss_d ) {
-                    Log_warn(ctx->logger,
-                        "Skipping peer: missing password for peer [%s]", key->bytes);
-                    entry = entry->next;
-                    continue;
+                        "Skipping peer: missing %s for peer [%s]", error_name, key->bytes);
+                    if (abort_if_invalid_ref) {
+                        Assert_failure("Invalid peer reference");
+                    }
+                    else {
+                        entry = entry->next;
+                        continue;
+                    }
                 }
 
                 Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
@@ -269,8 +275,8 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 if (r != 0 || msg->length > max_reference_size) {
                     Log_warn(ctx->logger, "Peer skipped:");
                     Log_warn(ctx->logger, "Too long peer reference for [%s]", key->bytes);
-                    if (abort_if_long_ref) {
-                        Assert_failure("Too long peer reference");
+                    if (abort_if_invalid_ref) {
+                        Assert_failure("Invalid peer reference");
                     }
                     else {
                         entry = entry->next;
