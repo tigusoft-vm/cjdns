@@ -16,6 +16,7 @@
 #include "client/Configurator.h"
 #include "benc/String.h"
 #include "benc/Dict.h"
+#include "benc/serialization/standard/BencMessageWriter.h"
 #include "benc/Int.h"
 #include "benc/List.h"
 #include "memory/Allocator.h"
@@ -211,7 +212,29 @@ static void udpInterface(Dict* config, struct Context* ctx)
                                                "is not a dictionary type.", key->bytes);
                     exit(-1);
                 }
-                Dict* value = entry->val->as.dictionary;
+                Dict* all =  entry->val->as.dictionary;
+                Dict* value = Dict_new(perCallAlloc);
+                String* pub_d = Dict_getString(all, String_CONST("publicKey"));
+                String* pss_d = Dict_getString(all, String_CONST("password"));
+                String* peerName_d = Dict_getString(all, String_CONST("peerName"));
+
+                if ( ! pub_d ) {
+                    Log_warn(ctx->logger,
+                        "Skipping peer: missing publicKey for peer [%s]", key->bytes);
+                    entry = entry->next;
+                    continue;
+                }
+                if ( ! pss_d ) {
+                    Log_warn(ctx->logger,
+                        "Skipping peer: missing password for peer [%s]", key->bytes);
+                    entry = entry->next;
+                    continue;
+                }
+
+                Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
+                Dict_putString(value, String_CONST("password"), pss_d, perCallAlloc);
+                Dict_putString(value, String_CONST("peerName"), peerName_d, perCallAlloc);
+
                 Log_keys(ctx->logger, "Attempting to connect to node [%s].", key->bytes);
                 key = String_clone(key, perCallAlloc);
                 char* lastColon = CString_strrchr(key->bytes, ':');
@@ -235,6 +258,17 @@ static void udpInterface(Dict* config, struct Context* ctx)
                         entry = entry->next;
                         continue;
                     }
+                }
+                struct Allocator* child = Allocator_child(ctx->alloc);
+                struct Message* msg = Message_new(0, AdminClient_MAX_MESSAGE_SIZE + 256, child);
+                int r = BencMessageWriter_writeDictTry(value, msg, NULL);
+
+                const int max_reference_size = 298;
+                if (r != 0 || msg->length > max_reference_size) {
+                    Log_warn(ctx->logger, "Peer skipped:");
+                    Log_warn(ctx->logger, "Too long peer reference for [%s]", key->bytes);
+                    entry = entry->next;
+                    continue;
                 }
                 Dict_putInt(value, String_CONST("interfaceNumber"), ifNum, perCallAlloc);
                 Dict_putString(value, String_CONST("address"), key, perCallAlloc);
