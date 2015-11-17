@@ -52,6 +52,7 @@ Builder.configure({
         '-Wall',
         '-Wextra',
         '-Werror',
+        '-Wno-unused-variable',
         '-Wno-pointer-sign',
         '-pedantic',
         '-D', builder.config.systemName + '=1',

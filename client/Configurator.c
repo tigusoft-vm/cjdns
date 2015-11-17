@@ -19,6 +19,7 @@
 #include "benc/serialization/standard/BencMessageWriter.h"
 #include "benc/Int.h"
 #include "benc/List.h"
+#include "exception/Jmp.h"
 #include "memory/Allocator.h"
 #include "util/events/Event.h"
 #include "util/events/UDPAddrIface.h"
@@ -179,13 +180,33 @@ static void authorizedPasswords(List* list, struct Context* ctx)
 static void udpInterface(Dict* config, struct Context* ctx)
 {
     List* ifaces = Dict_getList(config, String_CONST("UDPInterface"));
+
+
+
+
+
+
+
     if (!ifaces) {
         ifaces = List_new(ctx->alloc);
         List_addDict(ifaces, Dict_getDict(config, String_CONST("UDPInterface")), ctx->alloc);
     }
 
+
     uint32_t count = List_size(ifaces);
-    for (uint32_t i = 0; i < count; i++) {
+    uint32_t i = 0;
+    for (; count < 50; count++) {
+            struct Jmp jmp;
+
+                Jmp_try(jmp) {
+                   // BencMessageWriter_writeDictTry(value, msg, &jmp.handler);
+                } Jmp_catch {
+                    // Log_warn(ctx->logger, "Too long peer reference");
+                    return;
+                }
+}
+
+/*
         Dict *udp = List_getDict(ifaces, i);
         if (!udp) {
             continue;
@@ -261,10 +282,20 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 }
                 struct Allocator* child = Allocator_child(ctx->alloc);
                 struct Message* msg = Message_new(0, AdminClient_MAX_MESSAGE_SIZE + 256, child);
-                int r = BencMessageWriter_writeDictTry(value, msg, NULL);
+
+
+                struct Jmp jmp;
+
+                Jmp_try(jmp) {
+                   // BencMessageWriter_writeDictTry(value, msg, &jmp.handler);
+                } Jmp_catch {
+                    // Log_warn(ctx->logger, "Too long peer reference");
+                    return;
+                }
+
 
                 const int max_reference_size = 298;
-                if (r != 0 || msg->length > max_reference_size) {
+                if (msg->length > max_reference_size) {
                     Log_warn(ctx->logger, "Peer skipped:");
                     Log_warn(ctx->logger, "Too long peer reference for [%s]", key->bytes);
                     entry = entry->next;
@@ -278,6 +309,7 @@ static void udpInterface(Dict* config, struct Context* ctx)
             Allocator_free(perCallAlloc);
         }
     }
+    */
 }
 
 static void tunInterface(Dict* ifaceConf, struct Allocator* tempAlloc, struct Context* ctx)
