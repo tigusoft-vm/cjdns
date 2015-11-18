@@ -35,6 +35,7 @@
 #include "wire/Message.h"
 #include "wire/Headers.h"
 
+#include <stdio.h>
 /** After this number of milliseconds, a node will be regarded as unresponsive. */
 #define UNRESPONSIVE_AFTER_MILLISECONDS (20*1024)
 
@@ -402,6 +403,18 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 {
     ep->bytesIn += msg->length;
 
+    printf("msg=%uB, bytesIn=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesIn);
+    for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
+        printf("%x", ep->addr.ip6.bytes[i]);
+        if (i % 2) {
+           printf(":");
+        }
+    }
+    String* pub_key = Address_toString(&ep->addr, ep->alloc);
+    printf("\b], %s,",pub_key->bytes);
+    char* sock_address = Sockaddr_print(ep->lladdr, ep->alloc);
+    printf(" sockaddr=%s\n",sock_address);
+
     int caState = CryptoAuth_getState(ep->caSession);
     if (ep->state < InterfaceController_PeerState_ESTABLISHED) {
         // EP states track CryptoAuth states...
@@ -458,8 +471,19 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 
     ep->bytesOut += msg->length;
 
-    int msgs = PeerLink_send(msg, ep->peerLink);
+    printf("msg=%uB, bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesOut);
+    for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
+        printf("%x", ep->addr.ip6.bytes[i]);
+        if (i % 2) {
+           printf(":");
+        }
+    }
+    //String* pub_key = Address_toString(&ep->addr, ep->alloc);
+    printf("\b], %s,",Address_toString(&ep->addr, ep->alloc)->bytes);
+    //char* sock_address = Sockaddr_print(ep->lladdr, ep->alloc);
+    printf(" sockaddr=%s\n",Sockaddr_print(ep->lladdr, ep->alloc));
 
+    int msgs = PeerLink_send(msg, ep->peerLink);
     for (int i = 0; i < msgs; i++) {
         msg = PeerLink_poll(ep->peerLink);
         Assert_true(!CryptoAuth_encrypt(ep->caSession, msg));
