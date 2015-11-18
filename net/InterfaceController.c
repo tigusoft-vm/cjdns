@@ -506,6 +506,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
     //printf(" sockaddr=%s\n",Sockaddr_print(ep_next->lladdr, ep_next->alloc));
 
     int msgs = PeerLink_send(msg, ep->peerLink);
+
     for (int i = 0; i < msgs; i++) {
         msg = PeerLink_poll(ep->peerLink);
         Assert_true(!CryptoAuth_encrypt(ep->caSession, msg));
