@@ -34,7 +34,6 @@
 #include "net/EventEmitter.h"
 #include "net/SessionManager.h"
 #include "net/SwitchAdapter.h"
-#include "net/ConverterV15.h"
 #include "net/UpperDistributor.h"
 #include "net/TUNAdapter.h"
 #include "wire/Headers.h"
@@ -186,7 +185,7 @@ void TestFramework_linkNodes(struct TestFramework* client,
         Assert_true(!ret);
     } else {
         // Except that it has an authorizedPassword added.
-        CryptoAuth_addUser(String_CONST("abcdefg123"), 1, String_CONST("TEST"), server->nc->ca);
+        CryptoAuth_addUser(String_CONST("abcdefg123"), String_CONST("TEST"), server->nc->ca);
 
         // Client has pubKey and passwd for the server.
         InterfaceController_bootstrapPeer(client->nc->ifController,
@@ -194,6 +193,8 @@ void TestFramework_linkNodes(struct TestFramework* client,
                                    server->publicKey,
                                    Sockaddr_LOOPBACK,
                                    String_CONST("abcdefg123"),
+                                   NULL,
+                                   NULL,
                                    client->alloc);
     }
 }

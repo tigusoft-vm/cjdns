@@ -70,11 +70,11 @@
 #include "util/Map.h"
 static inline uint32_t Map_EndpointsBySockaddr_hash(struct Sockaddr** key)
 {
-    return Checksum_engine((uint8_t*) &(key[0][1]), key[0]->addrLen - Sockaddr_OVERHEAD);
+    return Sockaddr_hash(*key);
 }
 static inline int Map_EndpointsBySockaddr_compare(struct Sockaddr** keyA, struct Sockaddr** keyB)
 {
-    return Bits_memcmp((uint8_t*) *keyA, (uint8_t*) *keyB, keyA[0]->addrLen);
+    return Sockaddr_compare(*keyA, *keyB);
 }
 // ---------------- EndMap ----------------
 
@@ -556,7 +556,7 @@ static Iface_DEFUN handleBeacon(struct Message* msg, struct InterfaceController_
     if (epIndex > -1) {
         // The password might have changed!
         struct Peer* ep = ici->peerMap.values[epIndex];
-        CryptoAuth_setAuth(beaconPass, 1, ep->caSession);
+        CryptoAuth_setAuth(beaconPass, NULL, ep->caSession);
         return NULL;
     }
 
@@ -576,7 +576,7 @@ static Iface_DEFUN handleBeacon(struct Message* msg, struct InterfaceController_
     ep->peerLink = PeerLink_new(ic->eventBase, epAlloc);
     ep->caSession =
         CryptoAuth_newSession(ic->ca, epAlloc, beacon.publicKey, addr.ip6.bytes, false, "outer");
-    CryptoAuth_setAuth(beaconPass, 1, ep->caSession);
+    CryptoAuth_setAuth(beaconPass, NULL, ep->caSession);
 
     ep->switchIf.send = sendFromSwitch;
 
@@ -693,6 +693,7 @@ static Iface_DEFUN handleIncomingFromWire(struct Message* msg, struct Iface* add
 
     struct Peer* ep = Identity_check((struct Peer*) ici->peerMap.values[epIndex]);
     Message_shift(msg, -lladdr->addrLen, NULL);
+    CryptoAuth_resetIfTimeout(ep->caSession);
     if (CryptoAuth_decrypt(ep->caSession, msg)) {
         return NULL;
     }
@@ -805,6 +806,8 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
                                       uint8_t* herPublicKey,
                                       const struct Sockaddr* lladdrParm,
                                       String* password,
+                                      String* login,
+                                      String* user,
                                       struct Allocator* alloc)
 {
     struct InterfaceController_pvt* ic = Identity_check((struct InterfaceController_pvt*) ifc);
@@ -848,7 +851,10 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
     ep->peerLink = PeerLink_new(ic->eventBase, epAlloc);
     ep->caSession =
         CryptoAuth_newSession(ic->ca, epAlloc, herPublicKey, ep->addr.ip6.bytes, false, "outer");
-    CryptoAuth_setAuth(password, 1, ep->caSession);
+    CryptoAuth_setAuth(password, login, ep->caSession);
+    if (user) {
+        ep->caSession->displayName = String_clone(user, epAlloc);
+    }
 
     ep->switchIf.send = sendFromSwitch;
 
@@ -908,8 +914,8 @@ int InterfaceController_getPeerStats(struct InterfaceController* ifController,
             s->timeOfLastMessage = peer->timeOfLastMessage;
             s->state = peer->state;
             s->isIncomingConnection = peer->isIncomingConnection;
-            if (peer->caSession->userName) {
-                s->user = String_clone(peer->caSession->userName, alloc);
+            if (peer->caSession->displayName) {
+                s->user = String_clone(peer->caSession->displayName, alloc);
             }
             struct ReplayProtector* rp = &peer->caSession->replayProtector;
             s->duplicates = rp->duplicates;
@@ -1012,7 +1018,7 @@ struct InterfaceController* InterfaceController_new(struct CryptoAuth* ca,
     // Add the beaconing password.
     Random_bytes(rand, out->beacon.password, Headers_Beacon_PASSWORD_LEN);
     String strPass = { .bytes=(char*)out->beacon.password, .len=Headers_Beacon_PASSWORD_LEN };
-    int ret = CryptoAuth_addUser(&strPass, 1, String_CONST("Local Peers"), ca);
+    int ret = CryptoAuth_addUser(&strPass, String_CONST("Local Peers"), ca);
     if (ret) {
         Log_warn(logger, "CryptoAuth_addUser() returned [%d]", ret);
     }

@@ -33,18 +33,23 @@
  *    8 |A|        Derivations          |S|         Additional          |
  *      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * If the 'A' bit is set, the packets in the connection are to be authenticated with Poly1305.
+ * Bits A and S and fields Derivitives and Additional are deprecated, they will always be ignored.
+ * Historically A means "authenticate", the bit is set to request Poly1305 authentication which
+ * is now enabled all of the time.
+ * S meant that the packet was used as part of session setup, this is a carry-over from a time
+ * when it was possible to initiate a session with someone whose key you do not know. The bit
+ * indicated that the packet should be "suppressed".
+ * Derivations was intended to be used for exchanging secrets between nodes. Alice and Bob
+ * having a shared secret (password) would allow Alice to give *something* to charlie which
+ * would not allow him to athenticate with Bob as if he was Alice but would allow him to
+ * to make a crypto session with Bob which was secured additionally by the shared secret between
+ * Alice and Bob which was (presumably) transferred to Charlie along a secure channel.
+ * The field Additional was never used but was intended to be for more information included
+ * depending on the authType.
+ *
  * The Auth Type and Hash Code combined make a lookup key which can be used to scan a hashtable
  * to see if the given password is known. It can be thought of as the "username" although it is
  * a derivative of the password.
- * The number of derivations represents how many times the hash of the password has been hashed
- * again. Assuming Alice and Bob have a secure shared secret and Bob and Charlie have a secure
- * shared secret, Bob can provide Charlie with a hash of his password with Alice which will allow
- * Charlie to then establish a secure connection with Alice, without relying exclusively on
- * asymmetrical cryptography.
- *
- * If the packet has 0 length and the 'S' bit is set then the packet is only intended for helping
- * to setup the Cryptoauth session and should be dropped rather than being passed to the user.
  */
 union CryptoHeader_Challenge
 {
@@ -70,32 +75,6 @@ Assert_compileTime(sizeof(union CryptoHeader_Challenge) == CryptoHeader_Challeng
 /** The number of bytes from the beginning which identify the auth for looking up the secret. */
 #define CryptoHeader_Challenge_KEYSIZE 8
 
-static inline int CryptoHeader_isSetupPacket(union CryptoHeader_Challenge* ac)
-{
-    return ac->challenge.additional & Endian_hostToBigEndian16(1<<15);
-}
-
-static inline void CryptoHeader_setPacketAuthRequired(union CryptoHeader_Challenge* ac,
-                                                 int require)
-{
-    if (require) {
-        ac->challenge.requirePacketAuthAndDerivationCount |=
-            Endian_hostToBigEndian16(1<<15);
-    } else {
-        ac->challenge.requirePacketAuthAndDerivationCount &=
-            Endian_hostToBigEndian16(~(1<<15));
-    }
-}
-
-static inline void CryptoHeader_setSetupPacket(union CryptoHeader_Challenge* ac, int empty)
-{
-    if (empty) {
-        ac->challenge.additional |= Endian_hostToBigEndian16(1<<15);
-    } else {
-        ac->challenge.additional &= Endian_hostToBigEndian16(~(1<<15));
-    }
-}
-
 static inline uint16_t CryptoHeader_getAuthChallengeDerivations(union CryptoHeader_Challenge* ac)
 {
     return Endian_bigEndianToHost16(ac->challenge.requirePacketAuthAndDerivationCount)
@@ -105,10 +84,7 @@ static inline uint16_t CryptoHeader_getAuthChallengeDerivations(union CryptoHead
 static inline void CryptoHeader_setAuthChallengeDerivations(union CryptoHeader_Challenge* ac,
                                                             uint16_t derivations)
 {
-    ac->challenge.requirePacketAuthAndDerivationCount &=
-        Endian_hostToBigEndian16(1<<15);
-    ac->challenge.requirePacketAuthAndDerivationCount |=
-        Endian_hostToBigEndian16(derivations & ~(1<<15));
+    ac->challenge.requirePacketAuthAndDerivationCount = Endian_hostToBigEndian16(derivations);
 }
 
 /**
