@@ -403,17 +403,28 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 {
     ep->bytesIn += msg->length;
 
-    printf("msg=%uB, bytesIn=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesIn);
+    printf("SRC:\nmsg=%uB, bytesIn=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesIn);
     for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
         printf("%x", ep->addr.ip6.bytes[i]);
         if (i % 2) {
            printf(":");
         }
     }
-    String* pub_key = Address_toString(&ep->addr, ep->alloc);
-    printf("\b], %s,",pub_key->bytes);
-    char* sock_address = Sockaddr_print(ep->lladdr, ep->alloc);
-    printf(" sockaddr=%s\n",sock_address);
+    printf("\b], %s,",Address_toString(&ep->addr, ep->alloc)->bytes);
+    printf("\nsockaddr=%s\n",Sockaddr_print(ep->lladdr, ep->alloc));
+
+    //struct Peer* ep_next = Identity_check((struct Peer*) &ep->ici->pub.addrIf);
+    //printf("PREV_PEER:\nmsg=%uB, "
+    //       "bytesIn=%uB to [",(unsigned)msg->length,(unsigned)ep_next->bytesIn);
+    //unsigned add_len = sizeof(ep_next->addr.ip6.bytes)/sizeof(ep_next->addr.ip6.bytes[0]);
+    //for (unsigned i = 0; i < add_len; i++) {
+    //    printf("%x", ep_next->addr.ip6.bytes[i]);
+    //    if (i % 2) {
+    //       printf(":");
+    //    }
+    //}
+    //printf("\b], %s,",Address_toString(&ep_next->addr, ep_next->alloc)->bytes);
+    //printf(" sockaddr=%s\n",Sockaddr_print(ep_next->lladdr, ep_next->alloc));
 
     int caState = CryptoAuth_getState(ep->caSession);
     if (ep->state < InterfaceController_PeerState_ESTABLISHED) {
@@ -471,17 +482,28 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 
     ep->bytesOut += msg->length;
 
-    printf("msg=%uB, bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesOut);
+    printf("DEST:\nmsg=%uB, bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesOut);
     for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
         printf("%x", ep->addr.ip6.bytes[i]);
         if (i % 2) {
            printf(":");
         }
     }
-    //String* pub_key = Address_toString(&ep->addr, ep->alloc);
     printf("\b], %s,",Address_toString(&ep->addr, ep->alloc)->bytes);
-    //char* sock_address = Sockaddr_print(ep->lladdr, ep->alloc);
-    printf(" sockaddr=%s\n",Sockaddr_print(ep->lladdr, ep->alloc));
+    printf("\nsockaddr=%s\n",Sockaddr_print(ep->lladdr, ep->alloc));
+
+    //struct Peer* ep_next = Identity_check(struct Peer*) &(ep->ici->pub.addrIf);
+    //printf("NEXT_PEER:\nmsg=%uB, "
+    //       "bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep_next->bytesOut);
+    //unsigned add_len = sizeof(ep_next->addr.ip6.bytes)/sizeof(ep_next->addr.ip6.bytes[0]);
+    //for (unsigned i = 0; i < add_len; i++) {
+    //    printf("%x", ep_next->addr.ip6.bytes[i]);
+    //    if (i % 2) {
+    //       printf(":");
+    //    }
+    //}
+    //printf("\b], %s,",Address_toString(&ep_next->addr, ep_next->alloc)->bytes);
+    //printf(" sockaddr=%s\n",Sockaddr_print(ep_next->lladdr, ep_next->alloc));
 
     int msgs = PeerLink_send(msg, ep->peerLink);
     for (int i = 0; i < msgs; i++) {
