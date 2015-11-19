@@ -497,6 +497,17 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 
     ep->bytesOut += msg->length;
 
+    printf("DST: [");
+    for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
+        printf("%x", ep->addr.ip6.bytes[i]);
+        if (i % 2) printf(":");
+    }
+    printf("]");
+    printf(" \t %s",Address_toString(&ep->addr, ep->alloc)->bytes);
+    printf(" \t sockaddr=%s",Sockaddr_print(ep->lladdr, ep->alloc));
+    printf(" \t SRC:msg=%uB \t bytesIn=%uB",(unsigned)msg->length,(unsigned)ep->bytesIn);
+    printf("\n");
+    /*
     printf("DEST:\nmsg=%uB, bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesOut);
     for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
         printf("%x", ep->addr.ip6.bytes[i]);
@@ -506,7 +517,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
     }
     printf("\b], %s,",Address_toString(&ep->addr, ep->alloc)->bytes);
     printf("\nsockaddr=%s\n",Sockaddr_print(ep->lladdr, ep->alloc));
-
+*/
     //struct Peer* ep_next = Identity_check(struct Peer*) &(ep->ici->pub.addrIf);
     //printf("NEXT_PEER:\nmsg=%uB, "
     //       "bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep_next->bytesOut);
