@@ -213,10 +213,24 @@ static void sendPeer(uint32_t pathfinderId,
     node->path_be = Endian_hostToBigEndian64(peer->addr.path);
     node->metric_be = 0xffffffff;
     node->version_be = Endian_hostToBigEndian32(peer->addr.protocolVersion);
+    printf("node->path_be: %lu\n", node->path_be);
+    uint64_t n = node->path_be;
+    while (n) {
+        if (n & 1) {
+            printf("1");
+        }
+        else {
+            printf("0");
+        }
+        n >>= 1;
+    }
+    printf("\n");
+    printf("peer->addr.path: %lu\n", peer->addr.path);
     Message_push32(msg, pathfinderId, NULL);
     Message_push32(msg, ev, NULL);
     Iface_send(&ic->eventEmitterIf, msg);
     Allocator_free(alloc);
+    printf("*********************************\n");
 }
 
 static void onPingResponse(struct SwitchPinger_Response* resp, void* onResponseContext)
@@ -729,6 +743,7 @@ static Iface_DEFUN handleIncomingFromWire(struct Message* msg, struct Iface* add
     if (Defined(Log_DEBUG) && false) {
         char* printedAddr = Hex_print(&lladdr[1], lladdr->addrLen - Sockaddr_OVERHEAD, msg->alloc);
         Log_debug(ici->ic->logger, "Incoming message from [%s]", printedAddr);
+        printf("Incoming message from [%s]\n", printedAddr);
     }
 
     if (lladdr->flags & Sockaddr_flags_BCAST) {
@@ -779,6 +794,7 @@ static int freeAlloc(struct Allocator_OnFreeJob* job)
 
 static void sendBeacon(struct InterfaceController_Iface_pvt* ici, struct Allocator* tempAlloc)
 {
+    printf("sendBeacon\n");
     if (ici->beaconState < InterfaceController_beaconState_newState_SEND) {
         Log_debug(ici->ic->logger, "sendBeacon(%s) -> beaconing disabled", ici->name->bytes);
         return;
