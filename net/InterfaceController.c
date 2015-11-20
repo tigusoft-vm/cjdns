@@ -417,17 +417,18 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 {
     ep->bytesIn += msg->length;
 
+    struct Allocator* dbgAlloc = Allocator_child(ep->alloc);
     printf("SRC: [");
     for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
         printf("%x", ep->addr.ip6.bytes[i]);
         if (i % 2) printf(":");
     }
     printf("]");
-    printf(" \t %s",Address_toString(&ep->addr, ep->alloc)->bytes);
-    printf(" \t sockaddr=%s",Sockaddr_print(ep->lladdr, ep->alloc));
+    printf(" \t %s",Address_toString(&ep->addr, dbgAlloc)->bytes);
+    printf(" \t sockaddr=%s",Sockaddr_print(ep->lladdr, dbgAlloc));
     printf(" \t SRC:msg=%uB \t bytesIn=%uB",(unsigned)msg->length,(unsigned)ep->bytesIn);
     printf("\n");
-
+    Allocator_free(dbgAlloc);
     //struct Peer* ep_next = Identity_check((struct Peer*) &ep->ici->pub.addrIf);
     //printf("PREV_PEER:\nmsg=%uB, "
     //       "bytesIn=%uB to [",(unsigned)msg->length,(unsigned)ep_next->bytesIn);
