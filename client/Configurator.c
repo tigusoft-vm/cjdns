@@ -219,6 +219,7 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 String* pub_d = Dict_getString(all, String_CONST("publicKey"));
                 String* pss_d = Dict_getString(all, String_CONST("password"));
                 String* peerName_d = Dict_getString(all, String_CONST("peerName"));
+                String* login_d = Dict_getString(all, String_CONST("login"));
 
                 if ( !pub_d || !pss_d ) {
                     const char * error_name = "(unknown)";
@@ -242,6 +243,7 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
                 Dict_putString(value, String_CONST("password"), pss_d, perCallAlloc);
                 Dict_putString(value, String_CONST("peerName"), peerName_d, perCallAlloc);
+                Dict_putString(value, String_CONST("login"), login_d, perCallAlloc);
 
                 Log_keys(ctx->logger, "Attempting to connect to node [%s].", key->bytes);
                 key = String_clone(key, perCallAlloc);
