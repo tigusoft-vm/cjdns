@@ -74,7 +74,15 @@ struct EventBase* EventBase_new(struct Allocator* allocator)
 
 static void timer_cb(uv_timer_t* handle)
 {
-    printf("timer_cb\n");
+    printf("timer_cb!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+}
+
+uv_timer_t timer_req;
+void EventBase_beginTimer(struct EventBase* eventBase)
+{
+    struct EventBase_pvt* ctx = Identity_check((struct EventBase_pvt*) eventBase);
+    uv_timer_init(ctx->loop, &timer_req);
+    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 50);
 }
 
 void EventBase_beginLoop(struct EventBase* eventBase)
@@ -83,10 +91,6 @@ void EventBase_beginLoop(struct EventBase* eventBase)
 
     Assert_true(!ctx->running); // double begin
     ctx->running = 1;
-
-    uv_timer_t timer_req;
-    uv_timer_init(ctx->loop, &timer_req);
-    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 2000);
 
     // start the loop.
     uv_run(ctx->loop, UV_RUN_DEFAULT);
