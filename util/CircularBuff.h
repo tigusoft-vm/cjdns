@@ -24,7 +24,20 @@
 #include <assert.h>
 #include <stdlib.h>
 
-typedef struct uv_buff_circular {
+/**
+ * single element in circular buffer
+ */
+typedef struct send_packet
+{
+    uv_buf_t *buffer;
+    uv_udp_send_t* req;
+    uv_udp_t* handle;
+    const struct sockaddr* addr;
+    uv_udp_send_cb send_cb;
+} send_packet;
+
+typedef struct uv_buff_circular
+{
     uv_buf_t *buffs; // array of buffers
     size_t max_size; // number of elements in buffs
     size_t size; // current size
