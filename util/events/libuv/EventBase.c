@@ -81,7 +81,10 @@ static void timer_cb(uv_timer_t* handle)
 {
     printf("timer_cb!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     send_buffer sendBuffer;
-    CircularBuffPush(&packet_buffer, &sendBuffer);
+    sendBuffer.buffer = (uv_buf_t *)malloc(sizeof(uv_buf_t));
+    sendBuffer.buffer->base = NULL;
+    sendBuffer.buffer->len = 0;
+    CircularBuffPop(&packet_buffer, &sendBuffer);
     int ret = uv_udp_send(sendBuffer.req, sendBuffer.handle, sendBuffer.buffer, 1,
                 sendBuffer.addr, sendBuffer.send_cb);
 

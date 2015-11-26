@@ -55,6 +55,7 @@ void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
     circular_buff->buffs = (send_buffer *)malloc(sizeof(send_buffer) * nbufs);
     for (size_t i = 0; i < nbufs; ++i)
     {
+        circular_buff->buffs[i].buffer = (uv_buf_t *)malloc(sizeof(uv_buf_t));
         circular_buff->buffs[i].buffer->base = NULL;
         circular_buff->buffs[i].buffer->len = 0;
     }
@@ -71,6 +72,7 @@ void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
  */
 int CircularBuffPush(uv_buff_circular * const circular_buff, send_buffer * const buff)
 {
+    printf("CircularBuffPush\n");
     if (circular_buff == NULL)
     {
         return 1;
@@ -108,6 +110,7 @@ int CircularBuffPush(uv_buff_circular * const circular_buff, send_buffer * const
     {
         circular_buff->size++;
     }
+    printf("CircularBuffPush end\n");
     return 0;
 }
 
@@ -119,6 +122,7 @@ int CircularBuffPush(uv_buff_circular * const circular_buff, send_buffer * const
  */
 int CircularBuffPop(uv_buff_circular *circular_buff, send_buffer * const buff)
 {
+    printf("CircularBuffPop\n");
     if (circular_buff == NULL)
     {
         return 1;
