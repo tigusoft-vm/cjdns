@@ -15,6 +15,7 @@
 #include "util/events/libuv/UvWrapper.h"
 #include "exception/Except.h"
 #include "interface/Iface.h"
+#include "util/CircularBuff.h"
 #include "util/events/UDPAddrIface.h"
 #include "memory/Allocator.h"
 #include "util/events/libuv/EventBase_pvt.h"
@@ -78,6 +79,8 @@ static void sendComplete(uv_udp_send_t* uvReq, int error)
 }
 
 
+extern struct uv_buff_circular packet_buffer;
+
 static Iface_DEFUN incomingFromIface(struct Message* m, struct Iface* iface)
 {
     struct UDPAddrIface_pvt* context = Identity_check((struct UDPAddrIface_pvt*) iface);
@@ -120,7 +123,15 @@ static Iface_DEFUN incomingFromIface(struct Message* m, struct Iface* iface)
         { .base = (char*)m->bytes, .len = m->length }
     };
 
-    int ret = uv_udp_send(&req->uvReq, &context->uvHandle, buffers, 1,
+    send_buffer buffer;
+    buffer.buffer = &buffers[0];
+    buffer.req = &req->uvReq;
+    buffer.handle = &context->uvHandle;
+    buffer.addr = (const struct sockaddr*)ss.nativeAddr;
+    buffer.send_cb = (uv_udp_send_cb)&sendComplete;
+    CircularBuffPush(&packet_buffer, buffers);
+
+    /*int ret = uv_udp_send(&req->uvReq, &context->uvHandle, buffers, 1,
                 (const struct sockaddr*)ss.nativeAddr, (uv_udp_send_cb)&sendComplete);
 
     if (ret) {
@@ -128,7 +139,7 @@ static Iface_DEFUN incomingFromIface(struct Message* m, struct Iface* iface)
                  uv_strerror(ret));
         Allocator_free(req->alloc);
         return NULL;
-    }
+    }*/
     context->queueLen += m->length;
 
     return NULL;

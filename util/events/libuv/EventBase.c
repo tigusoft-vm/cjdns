@@ -16,6 +16,7 @@
 #include "memory/Allocator.h"
 #include "util/events/libuv/EventBase_pvt.h"
 #include "util/Assert.h"
+#include "util/CircularBuff.h"
 #include "util/Identity.h"
 
 #ifdef win32
@@ -72,18 +73,32 @@ struct EventBase* EventBase_new(struct Allocator* allocator)
     return &base->pub;
 }
 
+// TIGUSOFT
+uv_timer_t timer_req;
+struct uv_buff_circular packet_buffer;
+
 static void timer_cb(uv_timer_t* handle)
 {
     printf("timer_cb!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    send_buffer sendBuffer;
+    CircularBuffPush(&packet_buffer, &sendBuffer);
+    int ret = uv_udp_send(sendBuffer.req, sendBuffer.handle, sendBuffer.buffer, 1,
+                sendBuffer.addr, sendBuffer.send_cb);
+
+    if (ret) {
+        //Allocator_free(req->alloc);
+        return;
+    }
 }
 
-uv_timer_t timer_req;
 void EventBase_beginTimer(struct EventBase* eventBase)
 {
     struct EventBase_pvt* ctx = Identity_check((struct EventBase_pvt*) eventBase);
     uv_timer_init(ctx->loop, &timer_req);
     uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 50);
+    CircularBuffInit(&packet_buffer, 1000);
 }
+// TIGUSOFT END
 
 void EventBase_beginLoop(struct EventBase* eventBase)
 {
