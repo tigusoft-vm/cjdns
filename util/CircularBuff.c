@@ -1,5 +1,6 @@
 #include "util/CircularBuff.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 //private functions
@@ -38,7 +39,7 @@ static void move_internal_pointer(uv_buff_circular * const circular_buff) {
 void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs) {
 	assert(circular_buff != NULL);
 	circular_buff->buffs = (uv_buf_t *)malloc(sizeof(uv_buf_t) * nbufs);
-	for (int i = 0; i < nbufs; ++i) {
+	for (size_t i = 0; i < nbufs; ++i) {
 		circular_buff->buffs[i].base = NULL;
 		circular_buff->buffs[i].len = 0;
 	}
@@ -100,10 +101,9 @@ int CircularBuffPop(uv_buff_circular *circular_buff, uv_buf_t * const buff) {
 	assert(buff->len == 0);
 
 	size_t pop_element_index = circular_buff->max_size;
-	size_t last_element_index = circular_buff->current_element - circular_buff->buffs;
 
 	uv_buf_t *pop_ptr = circular_buff->current_element;
-	for (int i = 0; i < circular_buff->size - 1; ++i) {
+	for (size_t i = 0; i < circular_buff->size - 1; ++i) {
 		if (pop_ptr == &circular_buff->buffs[0]) {
 			pop_ptr += circular_buff->max_size - 1; // last element in array
 		}
@@ -135,7 +135,7 @@ void CircularBuffDeinit(uv_buff_circular * const circular_buff) {
 		return;
 	}
 
-	for (int i = 0; i < circular_buff->max_size; ++i) {
+	for (size_t i = 0; i < circular_buff->max_size; ++i) {
 		if (circular_buff->buffs[i].base != NULL)
 			free_buff(&circular_buff->buffs[i]);
 	}
