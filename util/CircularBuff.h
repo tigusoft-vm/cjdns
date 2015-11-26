@@ -15,6 +15,11 @@
 #ifndef CircularBuff_H
 #define CircularBuff_H
 
+#include "util/Linker.h"
+Linker_require("util/CircularBuff.c")
+
+#include <uv.h>
+
 typedef struct uv_buff_circular {
     uv_buf_t *buffs; // array of buffers
     size_t max_size; // number of elements in buffs
