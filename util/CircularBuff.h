@@ -15,7 +15,13 @@
 #ifndef CircularBuff_H
 #define CircularBuff_H
 
-typedef struct uv_buff_circular uv_buff_circular;
+typedef struct uv_buff_circular {
+    uv_buf_t *buffs; // array of buffers
+    size_t max_size; // number of elements in buffs
+    int size; // current size
+    // private
+    uv_buf_t *current_element; // last element
+} uv_buff_circular;
 
 void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs);
 int CircularBuffPush(uv_buff_circular * const circular_buff, uv_buf_t * const buff);

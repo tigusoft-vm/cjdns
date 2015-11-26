@@ -2,15 +2,6 @@
 
 #include <stdlib.h>
 
-typedef struct uv_buff_circular {
-	uv_buf_t *buffs; // array of buffers
-	size_t max_size; // number of elements in buffs
-	int size; // current size
-	// private
-	uv_buf_t *current_element; // last element
-} uv_buff_circular;
-
-
 //private functions
 
 /**
