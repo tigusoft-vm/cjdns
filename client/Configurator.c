@@ -150,14 +150,28 @@ static void authorizedPasswords(List* list, struct Context* ctx)
         Dict* d = List_getDict(list, i);
         String* passwd = Dict_getString(d, String_CONST("password"));
         String* user = Dict_getString(d, String_CONST("user"));
+        // start -- <tiguwita>
+        int64_t* limit = Dict_getInt(d, String_CONST("max_speed"));
         String* displayName = user;
         if (!displayName) {
             displayName = String_printf(child, "password [%d]", i);
         }
         //String* publicKey = Dict_getString(d, String_CONST("publicKey"));
         String* ipv6 = Dict_getString(d, String_CONST("ipv6"));
-        Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s].",
-            i, displayName->bytes);
+
+        if (!limit) {
+            //limit = Dict_getInt(d, String_new("0", ctx->alloc)); // TOTIGUDO default limitation
+            Log_warn(ctx->logger, "Bad max_speed format for password #[%d]",i);
+        } else if (*limit != 0) {
+            Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s] "
+                                  "with speed limitation set at [%dkb/s].",
+                     i, displayName->bytes, (int)*limit);
+        } else {
+            Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s] "
+                                  "with no speed limitation set limit = %d.",
+                     i, displayName->bytes, (int)*limit);
+        }
+        // end -- <tiguwita>
         Dict *args = Dict_new(child);
         uint32_t i = 1;
         Dict_putInt(args, String_CONST("authType"), i, child);
