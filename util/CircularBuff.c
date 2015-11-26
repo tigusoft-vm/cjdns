@@ -44,7 +44,7 @@ static void move_internal_pointer(uv_buff_circular * const circular_buff) {
  * @param circular_buff Must be allocated in caller.
  * @param nbufs Number of buffers
  */
-void buff_circular_init(uv_buff_circular *circular_buff, size_t nbufs) {
+void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs) {
 	assert(circular_buff != NULL);
 	circular_buff->buffs = (uv_buf_t *)malloc(sizeof(uv_buf_t) * nbufs);
 	for (int i = 0; i < nbufs; ++i) {
@@ -62,7 +62,7 @@ void buff_circular_init(uv_buff_circular *circular_buff, size_t nbufs) {
  * @param buff Initialized by caller. Clean in this function (.base = NULL, .len=0).
  * @return 0 if success
  */
-int buff_circular_push(uv_buff_circular * const circular_buff, uv_buf_t * const buff) {
+int CircularBuffPush(uv_buff_circular * const circular_buff, uv_buf_t * const buff) {
 	if (circular_buff == NULL) {
 		return 1;
 	}
@@ -97,7 +97,7 @@ int buff_circular_push(uv_buff_circular * const circular_buff, uv_buf_t * const 
  * @param buff Out pointer. Must be empty (.base = NULL, .len=0).
  * @return 0 if success
  */
-int buff_circular_pop(uv_buff_circular *circular_buff, uv_buf_t * const buff) {
+int CircularBuffPop(uv_buff_circular *circular_buff, uv_buf_t * const buff) {
 	if (circular_buff == NULL) {
 		return 1;
 	}
@@ -139,7 +139,7 @@ int buff_circular_pop(uv_buff_circular *circular_buff, uv_buf_t * const buff) {
  * Deallocate internal array.
  * Instance of struct 'circular_buff' will be not deallocate.
  */
-void buff_circular_deinit(uv_buff_circular * const circular_buff) {
+void CircularBuffDeinit(uv_buff_circular * const circular_buff) {
 	if (circular_buff == NULL) {
 		return;
 	}

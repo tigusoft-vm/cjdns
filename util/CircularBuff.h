@@ -17,9 +17,9 @@
 
 typedef struct uv_buff_circular uv_buff_circular;
 
-void buff_circular_init(uv_buff_circular *circular_buff, size_t nbufs);
-int buff_circular_push(uv_buff_circular * const circular_buff, uv_buf_t * const buff);
-buff_circular_pop(uv_buff_circular *circular_buff, uv_buf_t * const buff);
-void buff_circular_deinit(uv_buff_circular * const circular_buff);
+void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs);
+int CircularBuffPush(uv_buff_circular * const circular_buff, uv_buf_t * const buff);
+int CircularBuffPop(uv_buff_circular *circular_buff, uv_buf_t * const buff);
+void CircularBuffDeinit(uv_buff_circular * const circular_buff);
 
 #endif
