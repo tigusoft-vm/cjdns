@@ -27,22 +27,22 @@
 /**
  * single element in circular buffer
  */
-typedef struct send_packet
+typedef struct send_buffer
 {
     uv_buf_t *buffer;
     uv_udp_send_t* req;
     uv_udp_t* handle;
     const struct sockaddr* addr;
     uv_udp_send_cb send_cb;
-} send_packet;
+} send_buffer;
 
 typedef struct uv_buff_circular
 {
-    uv_buf_t *buffs; // array of buffers
+    send_buffer *buffs; // array of buffers
     size_t max_size; // number of elements in buffs
     size_t size; // current size
     // private
-    uv_buf_t *current_element; // last element
+    send_buffer *current_element; // last element
 } uv_buff_circular;
 
 /*void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs);
@@ -51,12 +51,12 @@ int CircularBuffPop(uv_buff_circular *circular_buff, uv_buf_t * const buff);
 void CircularBuffDeinit(uv_buff_circular * const circular_buff);
 */
 
-static void free_buff(uv_buf_t *buff)
+static void free_buff(send_buffer *buff)
 {
     assert(buff != NULL);
-    free(buff->base);
-    buff->base = NULL;
-    buff->len = 0;
+    free(buff->buffer->base);
+    buff->buffer->base = NULL;
+    buff->buffer->len = 0;
 }
 
 /**
@@ -86,11 +86,11 @@ static void move_internal_pointer(uv_buff_circular * const circular_buff)
 void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
 {
     assert(circular_buff != NULL);
-    circular_buff->buffs = (uv_buf_t *)malloc(sizeof(uv_buf_t) * nbufs);
+    circular_buff->buffs = (send_buffer *)malloc(sizeof(send_buffer) * nbufs);
     for (size_t i = 0; i < nbufs; ++i)
     {
-        circular_buff->buffs[i].base = NULL;
-        circular_buff->buffs[i].len = 0;
+        circular_buff->buffs[i].buffer->base = NULL;
+        circular_buff->buffs[i].buffer->len = 0;
     }
     circular_buff->max_size = nbufs;
     circular_buff->current_element = &circular_buff->buffs[nbufs -1];
@@ -124,9 +124,9 @@ int CircularBuffPush(uv_buff_circular * const circular_buff, uv_buf_t * const bu
     move_internal_pointer(circular_buff);
 
     // move element
-    circular_buff->current_element->len = buff->len;
+    circular_buff->current_element->buffer->len = buff->len;
     buff->len = 0;
-    circular_buff->current_element->base = buff->base;
+    circular_buff->current_element->buffer->base = buff->base;
     buff->base = NULL;
 
     // increment size
@@ -159,7 +159,7 @@ int CircularBuffPop(uv_buff_circular *circular_buff, uv_buf_t * const buff)
 
     size_t pop_element_index = circular_buff->max_size;
 
-    uv_buf_t *pop_ptr = circular_buff->current_element;
+    send_buffer *pop_ptr = circular_buff->current_element;
     for (size_t i = 0; i < circular_buff->size - 1; ++i)
     {
         if (pop_ptr == &circular_buff->buffs[0])
@@ -174,10 +174,10 @@ int CircularBuffPop(uv_buff_circular *circular_buff, uv_buf_t * const buff)
     assert(pop_element_index <= circular_buff->max_size);
 
     // move buffer
-    buff->base = pop_ptr->base;
-    pop_ptr->base = NULL;
-    buff->len = pop_ptr->len;
-    pop_ptr->len = 0;
+    buff->base = pop_ptr->buffer->base;
+    pop_ptr->buffer->base = NULL;
+    buff->len = pop_ptr->buffer->len;
+    pop_ptr->buffer->len = 0;
 
     circular_buff->size--;
 
@@ -198,7 +198,7 @@ void CircularBuffDeinit(uv_buff_circular * const circular_buff)
 
     for (size_t i = 0; i < circular_buff->max_size; ++i)
     {
-        if (circular_buff->buffs[i].base != NULL)
+        if (circular_buff->buffs[i].buffer->base != NULL)
         {
             free_buff(&circular_buff->buffs[i]);
         }
