@@ -60,6 +60,8 @@
 
 #define DEFAULT_TUN_DEV "tun0"
 
+
+
 static int genAddress(uint8_t addressOut[40],
                       uint8_t privateKeyHexOut[65],
                       uint8_t publicKeyBase32Out[53],
@@ -500,9 +502,10 @@ static void onCoreExit(int64_t exit_status, int term_signal)
     Assert_failure("Core exited with status [%d], signal [%d]\n", (int)exit_status, term_signal);
 }
 
-//TIGUSOFT
+// <tigusoft>
 extern struct uv_buff_circular packet_buffer;
-// END
+void CircularBuffInit(struct uv_buff_circular *circular_buff, size_t nbufs, struct Allocator* alloc); // <tigusoft/> - FIXME (move to .h ?)
+// </tigusoft>
 
 int main(int argc, char** argv)
 {

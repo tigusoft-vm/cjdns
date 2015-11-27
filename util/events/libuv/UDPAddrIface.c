@@ -26,6 +26,9 @@
 #include "wire/Error.h"
 #include "util/Hex.h"
 
+#include <stdio.h> // <tigusoft/> printf
+#include <unistd.h> // <tigusoft/> getpid
+
 struct UDPAddrIface_pvt
 {
     struct UDPAddrIface pub;
@@ -125,7 +128,7 @@ static Iface_DEFUN incomingFromIface(struct Message* m, struct Iface* iface)
         { .base = (char*)m->bytes, .len = m->length }
     };
 
-    printf("packet_buffer max size: %d\n", packet_buffer.max_size);
+    printf("packet_buffer max size: %zu\n", packet_buffer.max_size);
     send_buffer buffer;
     buffer.buffer = &buffers[0];
     buffer.req = &req->uvReq;
@@ -135,8 +138,8 @@ static Iface_DEFUN incomingFromIface(struct Message* m, struct Iface* iface)
     CircularBuffPush(&packet_buffer, &buffer);
     printf("after push\n");
     printf("pid %d\n", getpid());
-    printf("packet_buffer size = %d\n", packet_buffer.size);
-    printf("packet_buffer max size = %d\n", packet_buffer.max_size);
+    printf("packet_buffer size = %zu\n", packet_buffer.size);
+    printf("packet_buffer max size = %zu\n", packet_buffer.max_size);
 
     /*int ret = uv_udp_send(&req->uvReq, &context->uvHandle, buffers, 1,
                 (const struct sockaddr*)ss.nativeAddr, (uv_udp_send_cb)&sendComplete);

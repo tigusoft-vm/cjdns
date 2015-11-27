@@ -235,9 +235,10 @@ void Core_init(struct Allocator* alloc,
         }), admin);
 }
 
-//TIGUSOFT
+// <tigusoft>
 extern struct uv_buff_circular packet_buffer;
-// END
+void CircularBuffInit(struct uv_buff_circular *circular_buff, size_t nbufs, struct Allocator* alloc); // <tigusoft/> - FIXME (move to .h ?)
+// </tigusoft>
 
 int Core_main(int argc, char** argv)
 {
