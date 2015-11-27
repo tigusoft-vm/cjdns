@@ -50,6 +50,15 @@ static void beginConnection(Dict* args,
     String* peerName = Dict_getString(args, String_CONST("peerName"));
     String* error = NULL;
 
+    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+    if (!limit_up && !limit_down) {
+       Log_debug(ctx->logger, "** After rpcCall in fun userSpeed_limitation "
+              "upload speed:[%dkb/s], download speed:[%dkb/s].", (int)*limit_up, (int)*limit_down);
+    }
+
+
+
     Log_debug(ctx->logger, "Peering with [%s]", publicKey->bytes);
 
     struct Sockaddr_storage ss;
@@ -196,8 +205,8 @@ static void peerSpeed_limitation(Dict* args,
                                  struct Allocator* requestAlloc)
 {
     struct Context* ctx = vcontext;
-    int64_t* limit_up = Dict_getInt(args, String_CONST("max_speed_up"));
-    int64_t* limit_down = Dict_getInt(args, String_CONST("max_speed_down"));
+    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
     printf("After rpccall in fun peerSpeed_limitation "
            "upload speed:[%dkb/s], download speed:[%dkb/s].", *limit_up, *limit_down);
 }
@@ -229,7 +238,9 @@ void UDPInterface_admin_register(struct EventBase* base,
             { .name = "password", .required = 0, .type = "String" },
             { .name = "publicKey", .required = 1, .type = "String" },
             { .name = "address", .required = 1, .type = "String" },
-            { .name = "login", .required = 0, .type = "String" }
+            { .name = "login", .required = 0, .type = "String" },
+            { .name = "limit_up", .required = 0, .type = "Int" },
+            { .name = "limit_down", .required = 0, .type = "Int" }
         }), admin);
     // start -- <tiguwita>
     Admin_registerFunction("UDPInterface_peerSpeed_limitation", peerSpeed_limitation, ctx, true,
