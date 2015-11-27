@@ -40,6 +40,12 @@ static void add(Dict* args, void* vcontext, String* txid, struct Allocator* allo
     String* passwd = Dict_getString(args, String_CONST("password"));
     String* user = Dict_getString(args, String_CONST("user"));
     String* ipv6 = Dict_getString(args, String_CONST("ipv6"));
+    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+    if (!limit_up && !limit_down) {
+       printf("** After rpcCall in fun userSpeed_limitation "
+              "upload speed:[%dkb/s], download speed:[%dkb/s].", (int)*limit_up, (int)*limit_down);
+    }
 
     uint8_t ipv6Bytes[16];
     uint8_t* ipv6Arg;
@@ -97,17 +103,17 @@ static void list(Dict* args, void* vcontext, String* txid, struct Allocator* req
     Allocator_free(child);
 }
 // start -- <tiguwita>
-static void userSpeed_limitation(Dict* args,
-                                 void* vcontext,
-                                 String* txid,
-                                 struct Allocator* requestAlloc)
-{
-    struct Context* ctx = vcontext;
-    int64_t* limit_up = Dict_getInt(args, String_CONST("max_speed_up"));
-    int64_t* limit_down = Dict_getInt(args, String_CONST("max_speed_down"));
-    printf("** After rpccall in fun userSpeed_limitation "
-           "upload speed:[%dkb/s], download speed:[%dkb/s].", (int)*limit_up, (int)*limit_down);
-}
+//static void userSpeed_limitation(Dict* args,
+//                                 void* vcontext,
+//                                 String* txid,
+//                                 struct Allocator* requestAlloc)
+//{
+//    struct Context* ctx = vcontext;
+//    int64_t* limit_up = Dict_getInt(args, String_CONST("max_speed_up"));
+//    int64_t* limit_down = Dict_getInt(args, String_CONST("max_speed_down"));
+//    printf("** After rpccall in fun userSpeed_limitation "
+//           "upload speed:[%dkb/s], download speed:[%dkb/s].", (int)*limit_up, (int)*limit_down);
+//}
 // end -- <tiguzegna>
 void AuthorizedPasswords_init(struct Admin* admin,
                               struct CryptoAuth* ca,
@@ -123,7 +129,9 @@ void AuthorizedPasswords_init(struct Admin* admin,
         ((struct Admin_FunctionArg[]){
             { .name = "password", .required = 1, .type = "String" },
             { .name = "ipv6", .required = 0, .type = "String" },
-            { .name = "user", .required = 0, .type = "String" }
+            { .name = "user", .required = 0, .type = "String" },
+            { .name = "limit_up", .required = 0, .type = "Int" }, // <tiguhere>
+            { .name = "limit_down", .required = 0, .type = "Int" } // <tiguhere>
         }), admin);
     Admin_registerFunction("AuthorizedPasswords_remove", remove, context, true,
         ((struct Admin_FunctionArg[]){
@@ -131,13 +139,13 @@ void AuthorizedPasswords_init(struct Admin* admin,
         }), admin);
     Admin_registerFunction("AuthorizedPasswords_list", list, context, true, NULL, admin);
     // start -- <tiguwita>
-    Admin_registerFunction("AuthorizedPasswords_userSpeed_limitation",
-                           userSpeed_limitation, context, true,
-        ((struct Admin_FunctionArg[]) {
-           // { .name = "password", .required = 1, .type = "String" },
-           // { .name = "user", .required = 0, .type = "String" },
-            { .name = "limit_up", .required = 1, .type = "Int" },
-            { .name = "limit_down", .required = 1, .type = "Int" }
-        }), admin);
+//    Admin_registerFunction("AuthorizedPasswords_userSpeed_limitation",
+//                           userSpeed_limitation, context, true,
+//        ((struct Admin_FunctionArg[]) {
+//           // { .name = "password", .required = 1, .type = "String" },
+//           // { .name = "user", .required = 0, .type = "String" },
+//            { .name = "limit_up", .required = 1, .type = "Int" },
+//            { .name = "limit_down", .required = 1, .type = "Int" }
+//        }), admin);
     // end -- <tiguzegna>
 }
