@@ -214,7 +214,13 @@ static void sendPeer(uint32_t pathfinderId,
     node->version_be = Endian_hostToBigEndian32(peer->addr.protocolVersion);
     Message_push32(msg, pathfinderId, NULL);
     Message_push32(msg, ev, NULL);
-    Iface_send(&ic->eventEmitterIf, msg);
+    static int drop_packtet = 0;
+    ++drop_packtet;
+    drop_packtet %= 2;
+    if (drop_packtet == 0)
+    {
+        Iface_send(&ic->eventEmitterIf, msg);
+    }
     Allocator_free(alloc);
 }
 
