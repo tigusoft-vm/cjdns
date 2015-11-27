@@ -107,7 +107,7 @@ void EventBase_beginTimer(struct EventBase* eventBase, uint64_t repeat)
 {
     struct EventBase_pvt* ctx = Identity_check((struct EventBase_pvt*) eventBase);
     uv_timer_init(ctx->loop, &timer_req);
-    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 100);
+    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, repeat);
 }
 // TIGUSOFT END
 
