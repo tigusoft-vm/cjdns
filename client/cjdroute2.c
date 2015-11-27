@@ -693,7 +693,7 @@ int main(int argc, char** argv)
 
     Assert_ifParanoid(EventBase_eventCount(eventBase) == 1);
 
-    EventBase_beginTimer(eventBase);
+    EventBase_beginTimer(eventBase, 1);
 
     // --------------------- Configuration ------------------------- //
     Configurator_config(&config,

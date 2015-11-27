@@ -334,7 +334,7 @@ int Core_main(int argc, char** argv)
     Allocator_free(tempAlloc);
 
     Core_init(alloc, logger, eventBase, privateKey, admin, rand, eh, NULL, false);
-    EventBase_beginTimer(eventBase);
+    EventBase_beginTimer(eventBase, 200);
     EventBase_beginLoop(eventBase);
     return 0;
 }

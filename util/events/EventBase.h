@@ -19,6 +19,8 @@
 #include "util/Linker.h"
 Linker_require("util/events/libuv/EventBase.c")
 
+#include <stdint.h>
+
 struct EventBase
 {
     int unused;
@@ -27,6 +29,8 @@ struct EventBase
 struct EventBase* EventBase_new(struct Allocator* alloc);
 
 int EventBase_eventCount(struct EventBase* eventBase);
+
+void EventBase_beginTimer(struct EventBase* eventBase, uint64_t repeat);
 
 void EventBase_beginLoop(struct EventBase* eventBase);
 

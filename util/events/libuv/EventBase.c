@@ -103,7 +103,7 @@ static void timer_cb(uv_timer_t* handle)
     }
 }
 
-void EventBase_beginTimer(struct EventBase* eventBase)
+void EventBase_beginTimer(struct EventBase* eventBase, uint64_t repeat)
 {
     struct EventBase_pvt* ctx = Identity_check((struct EventBase_pvt*) eventBase);
     uv_timer_init(ctx->loop, &timer_req);
