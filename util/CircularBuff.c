@@ -51,6 +51,7 @@ static void move_internal_pointer(uv_buff_circular * const circular_buff)
  */
 void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
 {
+    printf("CircularBuffInit\n");
     assert(circular_buff != NULL);
     circular_buff->buffs = (send_buffer *)malloc(sizeof(send_buffer) * nbufs);
     for (size_t i = 0; i < nbufs; ++i)
@@ -62,6 +63,9 @@ void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
     circular_buff->max_size = nbufs;
     circular_buff->current_element = &circular_buff->buffs[nbufs -1];
     circular_buff->size = 0;
+    printf("buffer size: %d\n", circular_buff->size);
+    printf("buffer max size: %d\n", circular_buff->max_size);
+    printf("CircularBuffInit end\n");
 }
 
 /**
@@ -72,24 +76,32 @@ void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
  */
 int CircularBuffPush(uv_buff_circular * const circular_buff, send_buffer * const buff)
 {
-    printf("CircularBuffPush\n");
+    printf("[%d] CircularBuffPush\n", __LINE__);
     if (circular_buff == NULL)
     {
+        printf("[%d] CircularBuffPush RETURN 1\n", __LINE__);
         return 1;
     }
     if (buff == NULL)
     {
+        printf("[%d] CircularBuffPush RETURN 2\n", __LINE__);
         return 2;
     }
 
     assert(circular_buff->size <= circular_buff->max_size);
     if (circular_buff->size == circular_buff->max_size)  // buffer if full
     {
+        printf("[%d] CircularBuffPush RETURN 3\n", __LINE__);
+        printf("size: %d\n", circular_buff->size);
+        printf("max_size: %d\n", circular_buff->max_size);
         return 3;
     }
 
     // move 'current_element' pointer to next slot
     move_internal_pointer(circular_buff);
+
+    printf("[%d] CircularBuffPush move\n", __LINE__);
+
 
     // move element
     circular_buff->current_element->buffer->len = buff->buffer->len;
@@ -110,7 +122,9 @@ int CircularBuffPush(uv_buff_circular * const circular_buff, send_buffer * const
     {
         circular_buff->size++;
     }
-    printf("CircularBuffPush end\n");
+
+    printf("[%d] CircularBuffPush END\n", __LINE__);
+
     return 0;
 }
 
@@ -125,11 +139,18 @@ int CircularBuffPop(uv_buff_circular *circular_buff, send_buffer * const buff)
     printf("CircularBuffPop\n");
     if (circular_buff == NULL)
     {
+        printf("[%d] CircularBuffPop RETURN 1\n", __LINE__);
         return 1;
     }
     if (buff == NULL)
     {
+        printf("[%d] CircularBuffPop RETURN 2\n", __LINE__);
         return 2;
+    }
+    if (circular_buff->size == 0)
+    {
+        printf("[%d] CircularBuffPop RETURN 3\n", __LINE__);
+        return 3;
     }
 
     assert(buff->buffer->base == NULL);
@@ -140,6 +161,9 @@ int CircularBuffPop(uv_buff_circular *circular_buff, send_buffer * const buff)
     send_buffer *pop_ptr = circular_buff->current_element;
     for (size_t i = 0; i < circular_buff->size - 1; ++i)
     {
+        //printf("[%d] size: %d\n", __LINE__, circular_buff->size);
+        //printf("i = %d\n", i);
+        //printf("size = %d\n", circular_buff->size);
         if (pop_ptr == &circular_buff->buffs[0])
         {
             pop_ptr += circular_buff->max_size - 1; // last element in array
@@ -166,7 +190,7 @@ int CircularBuffPop(uv_buff_circular *circular_buff, send_buffer * const buff)
     pop_ptr->send_cb = NULL;
 
     circular_buff->size--;
-
+    printf("CircularBuffPop end\n");
     return 0;
 }
 

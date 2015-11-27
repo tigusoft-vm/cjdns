@@ -500,8 +500,13 @@ static void onCoreExit(int64_t exit_status, int term_signal)
     Assert_failure("Core exited with status [%d], signal [%d]\n", (int)exit_status, term_signal);
 }
 
+//TIGUSOFT
+extern struct uv_buff_circular packet_buffer;
+// END
+
 int main(int argc, char** argv)
 {
+    CircularBuffInit(&packet_buffer, 1000);
     #ifdef Log_KEYS
         fprintf(stderr, "Log_LEVEL = KEYS, EXPECT TO SEE PRIVATE KEYS IN YOUR LOGS!\n");
     #endif
@@ -687,6 +692,8 @@ int main(int argc, char** argv)
     }
 
     Assert_ifParanoid(EventBase_eventCount(eventBase) == 1);
+
+    EventBase_beginTimer(eventBase);
 
     // --------------------- Configuration ------------------------- //
     Configurator_config(&config,

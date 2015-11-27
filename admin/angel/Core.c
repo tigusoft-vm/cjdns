@@ -235,8 +235,13 @@ void Core_init(struct Allocator* alloc,
         }), admin);
 }
 
+//TIGUSOFT
+extern struct uv_buff_circular packet_buffer;
+// END
+
 int Core_main(int argc, char** argv)
 {
+    CircularBuffInit(&packet_buffer, 1000);
     struct Except* eh = NULL;
 
     if (argc != 3) {
@@ -327,7 +332,6 @@ int Core_main(int argc, char** argv)
     Iface_CALL(clientPipe->iface.send, clientResponse, &clientPipe->iface);
 
     Allocator_free(tempAlloc);
-
 
     Core_init(alloc, logger, eventBase, privateKey, admin, rand, eh, NULL, false);
     EventBase_beginTimer(eventBase);

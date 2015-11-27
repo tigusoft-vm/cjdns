@@ -66,6 +66,7 @@ struct UDPAddrIface_pvt* ifaceForHandle(uv_udp_t* handle)
 
 static void sendComplete(uv_udp_send_t* uvReq, int error)
 {
+    printf("sendComplete\n");
     struct UDPAddrIface_WriteRequest_pvt* req =
         Identity_check((struct UDPAddrIface_WriteRequest_pvt*) uvReq);
     if (error) {
@@ -76,6 +77,7 @@ static void sendComplete(uv_udp_send_t* uvReq, int error)
     req->udp->queueLen -= req->msg->length;
     Assert_true(req->udp->queueLen >= 0);
     Allocator_free(req->alloc);
+    printf("end of sendComplete\n");
 }
 
 
@@ -123,13 +125,18 @@ static Iface_DEFUN incomingFromIface(struct Message* m, struct Iface* iface)
         { .base = (char*)m->bytes, .len = m->length }
     };
 
+    printf("packet_buffer max size: %d\n", packet_buffer.max_size);
     send_buffer buffer;
     buffer.buffer = &buffers[0];
     buffer.req = &req->uvReq;
     buffer.handle = &context->uvHandle;
     buffer.addr = (const struct sockaddr*)ss.nativeAddr;
     buffer.send_cb = (uv_udp_send_cb)&sendComplete;
-    CircularBuffPush(&packet_buffer, buffers);
+    CircularBuffPush(&packet_buffer, &buffer);
+    printf("after push\n");
+    printf("pid %d\n", getpid());
+    printf("packet_buffer size = %d\n", packet_buffer.size);
+    printf("packet_buffer max size = %d\n", packet_buffer.max_size);
 
     /*int ret = uv_udp_send(&req->uvReq, &context->uvHandle, buffers, 1,
                 (const struct sockaddr*)ss.nativeAddr, (uv_udp_send_cb)&sendComplete);

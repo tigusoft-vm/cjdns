@@ -79,12 +79,20 @@ struct uv_buff_circular packet_buffer;
 
 static void timer_cb(uv_timer_t* handle)
 {
-    printf("timer_cb!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    printf("timer_cb\n");
+    printf("timer pid = %d\n", getpid());
     send_buffer sendBuffer;
     sendBuffer.buffer = (uv_buf_t *)malloc(sizeof(uv_buf_t));
     sendBuffer.buffer->base = NULL;
     sendBuffer.buffer->len = 0;
+    if (packet_buffer.size == 0)
+    {
+        printf("packet_buffer size = %d\n", packet_buffer.size);
+        printf("packet_buffer max size = %d\n", packet_buffer.max_size);
+        return;
+    }
     CircularBuffPop(&packet_buffer, &sendBuffer);
+    printf("uv_udp_send\n");
     int ret = uv_udp_send(sendBuffer.req, sendBuffer.handle, sendBuffer.buffer, 1,
                 sendBuffer.addr, sendBuffer.send_cb);
 
@@ -98,8 +106,7 @@ void EventBase_beginTimer(struct EventBase* eventBase)
 {
     struct EventBase_pvt* ctx = Identity_check((struct EventBase_pvt*) eventBase);
     uv_timer_init(ctx->loop, &timer_req);
-    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 50);
-    CircularBuffInit(&packet_buffer, 1000);
+    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 500);
 }
 // TIGUSOFT END
 
