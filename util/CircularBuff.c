@@ -49,20 +49,21 @@ static void move_internal_pointer(uv_buff_circular * const circular_buff)
  * @param circular_buff Must be allocated in caller.
  * @param nbufs Number of buffers
  */
-void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs)
+void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs, struct Allocator* alloc)
 {
     printf("CircularBuffInit\n");
     assert(circular_buff != NULL);
-    circular_buff->buffs = (send_buffer *)malloc(sizeof(send_buffer) * nbufs);
+    circular_buff->buffs = Allocator_malloc(alloc, sizeof(send_buffer) * nbufs);
     for (size_t i = 0; i < nbufs; ++i)
     {
-        circular_buff->buffs[i].buffer = (uv_buf_t *)malloc(sizeof(uv_buf_t));
+        circular_buff->buffs[i].buffer = Allocator_malloc(alloc, sizeof(uv_buf_t));
         circular_buff->buffs[i].buffer->base = NULL;
         circular_buff->buffs[i].buffer->len = 0;
     }
     circular_buff->max_size = nbufs;
     circular_buff->current_element = &circular_buff->buffs[nbufs -1];
     circular_buff->size = 0;
+    circular_buff->alloc = alloc;
     printf("buffer size: %d\n", circular_buff->size);
     printf("buffer max size: %d\n", circular_buff->max_size);
     printf("CircularBuffInit end\n");

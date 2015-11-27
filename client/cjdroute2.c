@@ -506,7 +506,6 @@ extern struct uv_buff_circular packet_buffer;
 
 int main(int argc, char** argv)
 {
-    CircularBuffInit(&packet_buffer, 1000);
     #ifdef Log_KEYS
         fprintf(stderr, "Log_LEVEL = KEYS, EXPECT TO SEE PRIVATE KEYS IN YOUR LOGS!\n");
     #endif
@@ -522,6 +521,7 @@ int main(int argc, char** argv)
     struct Allocator* allocator = MallocAllocator_new(1<<23);
     struct Random* rand = Random_new(allocator, NULL, eh);
     struct EventBase* eventBase = EventBase_new(allocator);
+    CircularBuffInit(&packet_buffer, 1000, allocator);
 
     if (argc >= 2) {
         // one argument

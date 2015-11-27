@@ -96,7 +96,8 @@ static void timer_cb(uv_timer_t* handle)
     int ret = uv_udp_send(sendBuffer.req, sendBuffer.handle, sendBuffer.buffer, 1,
                 sendBuffer.addr, sendBuffer.send_cb);
 
-    if (ret) {
+    if (ret)
+    {
         //Allocator_free(req->alloc);
         return;
     }
@@ -106,7 +107,7 @@ void EventBase_beginTimer(struct EventBase* eventBase)
 {
     struct EventBase_pvt* ctx = Identity_check((struct EventBase_pvt*) eventBase);
     uv_timer_init(ctx->loop, &timer_req);
-    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 500);
+    uv_timer_start(&timer_req, (uv_timer_cb)timer_cb, 0, 100);
 }
 // TIGUSOFT END
 

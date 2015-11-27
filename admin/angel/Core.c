@@ -241,7 +241,6 @@ extern struct uv_buff_circular packet_buffer;
 
 int Core_main(int argc, char** argv)
 {
-    CircularBuffInit(&packet_buffer, 1000);
     struct Except* eh = NULL;
 
     if (argc != 3) {
@@ -251,6 +250,7 @@ int Core_main(int argc, char** argv)
     struct Allocator* alloc = MallocAllocator_new(ALLOCATOR_FAILSAFE);
     struct Log* preLogger = FileWriterLog_new(stderr, alloc);
     struct EventBase* eventBase = EventBase_new(alloc);
+    CircularBuffInit(&packet_buffer, 1000, alloc);
 
     // -------------------- Setup the Pre-Logger ---------------------- //
     struct Log* logger = IndirectLog_new(alloc);

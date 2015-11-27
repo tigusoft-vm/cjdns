@@ -15,13 +15,13 @@
 #ifndef CircularBuff_H
 #define CircularBuff_H
 
-#include <uv.h>
-
+#include "memory/Allocator.h"
 #include "util/Linker.h"
 Linker_require("util/CircularBuff.c")
 
 #include <assert.h>
 #include <stdlib.h>
+#include <uv.h>
 
 /**
  * single element in circular buffer
@@ -42,9 +42,10 @@ typedef struct uv_buff_circular
     size_t size; // current size
     // private
     send_buffer *current_element; // last element
+    struct Allocator* alloc;
 } uv_buff_circular;
 
-void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs);
+void CircularBuffInit(uv_buff_circular *circular_buff, size_t nbufs, struct Allocator* alloc);
 int CircularBuffPush(uv_buff_circular * const circular_buff, send_buffer * const buff);
 int CircularBuffPop(uv_buff_circular *circular_buff, send_buffer * const buff);
 void CircularBuffDeinit(uv_buff_circular * const circular_buff);
