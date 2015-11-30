@@ -154,6 +154,18 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
                                       String* displayName,
                                       struct Allocator* alloc);
 
+/** InterfaceController with speed limits */
+int InterfaceController_bootstrapPeer_l(struct InterfaceController* ifc,
+                                      int interfaceNumber,
+                                      uint8_t* herPublicKey,
+                                      const struct Sockaddr* lladdr,
+                                      String* password,
+                                      String* login,
+                                      String* displayName,
+                                      int64_t* limit_up,
+                                      int64_t* limit_down,
+                                      struct Allocator* alloc);
+
 #define InterfaceController_beaconState_newState_OFF    0
 #define InterfaceController_beaconState_newState_ACCEPT 1
 #define InterfaceController_beaconState_newState_SEND   2
