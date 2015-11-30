@@ -142,6 +142,10 @@ struct Peer
     uint64_t bytesOut;
     uint64_t bytesIn;
 
+    /** variables for individual peer speed limitation */
+    int64_t limit_up;
+    int64_t limit_down;
+
     Identity
 };
 
@@ -882,10 +886,38 @@ int InterfaceController_beaconState(struct InterfaceController* ifc,
 int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
                                       int interfaceNumber,
                                       uint8_t* herPublicKey,
+                                      const struct Sockaddr* lladdr,
+                                      String* password,
+                                      String* login,
+                                      String* displayName,
+                                      struct Allocator* alloc)
+{
+    /** set limits to zeros - unlimited */
+    int64_t* limit_up = Allocator_malloc(alloc,sizeof(int64_t));
+    int64_t* limit_down = Allocator_malloc(alloc,sizeof(int64_t));
+    *limit_up = 0;
+    *limit_down = 0;
+    InterfaceController_bootstrapPeer_l(ifc,
+                                      interfaceNumber,
+                                      herPublicKey,
+                                      lladdr,
+                                      password,
+                                      login,
+                                      displayName,
+                                      limit_up,
+                                      limit_down,
+                                      alloc);
+}
+
+int InterfaceController_bootstrapPeer_l(struct InterfaceController* ifc,
+                                      int interfaceNumber,
+                                      uint8_t* herPublicKey,
                                       const struct Sockaddr* lladdrParm,
                                       String* password,
                                       String* login,
                                       String* user,
+                                      int64_t* limit_up,
+                                      int64_t* limit_down,
                                       struct Allocator* alloc)
 {
     struct InterfaceController_pvt* ic = Identity_check((struct InterfaceController_pvt*) ifc);
@@ -917,6 +949,8 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
     Assert_true(index >= 0);
     ep->alloc = epAlloc;
     ep->handle = ici->peerMap.handles[index];
+    ep->limit_up = *limit_up;
+    ep->limit_down = *limit_down;
     ep->lladdr = lladdr;
     ep->ici = ici;
     ep->isIncomingConnection = false;
