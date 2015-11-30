@@ -36,6 +36,7 @@
 #include "wire/Headers.h"
 
 #include <stdio.h>
+
 /** After this number of milliseconds, a node will be regarded as unresponsive. */
 #define UNRESPONSIVE_AFTER_MILLISECONDS (20*1024)
 
@@ -217,24 +218,10 @@ static void sendPeer(uint32_t pathfinderId,
     node->path_be = Endian_hostToBigEndian64(peer->addr.path);
     node->metric_be = 0xffffffff;
     node->version_be = Endian_hostToBigEndian32(peer->addr.protocolVersion);
-    printf("node->path_be: %lu\n", node->path_be);
-    uint64_t n = node->path_be;
-    while (n) {
-        if (n & 1) {
-            printf("1");
-        }
-        else {
-            printf("0");
-        }
-        n >>= 1;
-    }
-    printf("\n");
-    printf("peer->addr.path: %lu\n", peer->addr.path);
     Message_push32(msg, pathfinderId, NULL);
     Message_push32(msg, ev, NULL);
     Iface_send(&ic->eventEmitterIf, msg);
     Allocator_free(alloc);
-    printf("*********************************\n");
 }
 
 static void onPingResponse(struct SwitchPinger_Response* resp, void* onResponseContext)
@@ -421,31 +408,6 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 {
     ep->bytesIn += msg->length;
 
-    struct Allocator* dbgAlloc = Allocator_child(ep->alloc);
-    printf("SRC: [");
-    for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
-        printf("%x", ep->addr.ip6.bytes[i]);
-        if (i % 2) printf(":");
-    }
-    printf("]");
-    printf(" \t %s",Address_toString(&ep->addr, dbgAlloc)->bytes);
-    printf(" \t sockaddr=%s",Sockaddr_print(ep->lladdr, dbgAlloc));
-    printf(" \t SRC:msg=%uB \t bytesIn=%uB",(unsigned)msg->length,(unsigned)ep->bytesIn);
-    printf("\n");
-    Allocator_free(dbgAlloc);
-    //struct Peer* ep_next = Identity_check((struct Peer*) &ep->ici->pub.addrIf);
-    //printf("PREV_PEER:\nmsg=%uB, "
-    //       "bytesIn=%uB to [",(unsigned)msg->length,(unsigned)ep_next->bytesIn);
-    //unsigned add_len = sizeof(ep_next->addr.ip6.bytes)/sizeof(ep_next->addr.ip6.bytes[0]);
-    //for (unsigned i = 0; i < add_len; i++) {
-    //    printf("%x", ep_next->addr.ip6.bytes[i]);
-    //    if (i % 2) {
-    //       printf(":");
-    //    }
-    //}
-    //printf("\b], %s,",Address_toString(&ep_next->addr, ep_next->alloc)->bytes);
-    //printf(" sockaddr=%s\n",Sockaddr_print(ep_next->lladdr, ep_next->alloc));
-
     int caState = CryptoAuth_getState(ep->caSession);
     if (ep->state < InterfaceController_PeerState_ESTABLISHED) {
         // EP states track CryptoAuth states...
@@ -500,41 +462,14 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 {
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
 
+    struct PeerLink_Kbps kbps;
+    PeerLink_kbps(ep->peerLink, &kbps);
+    if (kbps.sendKbps > 50)
+    {
+        printf("drop packet, current out speed: %u\n", kbps.sendKbps);
+        return NULL;
+    }
     ep->bytesOut += msg->length;
-
-    printf("DST: [");
-    for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
-        printf("%x", ep->addr.ip6.bytes[i]);
-        if (i % 2) printf(":");
-    }
-    printf("]");
-    printf(" \t %s",Address_toString(&ep->addr, ep->alloc)->bytes);
-    printf(" \t sockaddr=%s",Sockaddr_print(ep->lladdr, ep->alloc));
-    printf(" \t SRC:msg=%uB \t bytesIn=%uB",(unsigned)msg->length,(unsigned)ep->bytesIn);
-    printf("\n");
-    /*
-    printf("DEST:\nmsg=%uB, bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep->bytesOut);
-    for (unsigned i = 0; i < sizeof(ep->addr.ip6.bytes)/sizeof(ep->addr.ip6.bytes[0]); i++) {
-        printf("%x", ep->addr.ip6.bytes[i]);
-        if (i % 2) {
-           printf(":");
-        }
-    }
-    printf("\b], %s,",Address_toString(&ep->addr, ep->alloc)->bytes);
-    printf("\nsockaddr=%s\n",Sockaddr_print(ep->lladdr, ep->alloc));
-*/
-    //struct Peer* ep_next = Identity_check(struct Peer*) &(ep->ici->pub.addrIf);
-    //printf("NEXT_PEER:\nmsg=%uB, "
-    //       "bytesOut=%uB to [",(unsigned)msg->length,(unsigned)ep_next->bytesOut);
-    //unsigned add_len = sizeof(ep_next->addr.ip6.bytes)/sizeof(ep_next->addr.ip6.bytes[0]);
-    //for (unsigned i = 0; i < add_len; i++) {
-    //    printf("%x", ep_next->addr.ip6.bytes[i]);
-    //    if (i % 2) {
-    //       printf(":");
-    //    }
-    //}
-    //printf("\b], %s,",Address_toString(&ep_next->addr, ep_next->alloc)->bytes);
-    //printf(" sockaddr=%s\n",Sockaddr_print(ep_next->lladdr, ep_next->alloc));
 
     int msgs = PeerLink_send(msg, ep->peerLink);
 
@@ -760,7 +695,6 @@ static Iface_DEFUN handleIncomingFromWire(struct Message* msg, struct Iface* add
     if (Defined(Log_DEBUG) && false) {
         char* printedAddr = Hex_print(&lladdr[1], lladdr->addrLen - Sockaddr_OVERHEAD, msg->alloc);
         Log_debug(ici->ic->logger, "Incoming message from [%s]", printedAddr);
-        printf("Incoming message from [%s]\n", printedAddr);
     }
 
     if (lladdr->flags & Sockaddr_flags_BCAST) {
@@ -811,7 +745,6 @@ static int freeAlloc(struct Allocator_OnFreeJob* job)
 
 static void sendBeacon(struct InterfaceController_Iface_pvt* ici, struct Allocator* tempAlloc)
 {
-    printf("sendBeacon\n");
     if (ici->beaconState < InterfaceController_beaconState_newState_SEND) {
         Log_debug(ici->ic->logger, "sendBeacon(%s) -> beaconing disabled", ici->name->bytes);
         return;
