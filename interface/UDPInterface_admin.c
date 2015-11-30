@@ -203,7 +203,7 @@ static void peerSpeed_limitation(Dict* args,
            "upload speed:[%dkb/s], download speed:[%dkb/s] "
            "for individual peer [%s]\n.", (int)*limit_up, (int)*limit_down, publicKey->bytes);
 
-    Dict out = Dict_CONST(String_CONST("error"), String_OBJ(String_CONST("Success error!")), NULL);
+    Dict out = Dict_CONST(String_CONST("success"), String_OBJ(String_CONST("Success")), NULL);
     Admin_sendMessage(&out, txid, ctx->admin);
 }
 // end -- <tiguzegna>
