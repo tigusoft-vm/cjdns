@@ -464,7 +464,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
-    if (kbps.sendKbps > ep->limit_up || ep->limit_up == 0)
+    if (kbps.sendKbps > ep->limit_up && ep->limit_up != 0)
     {
         printf("drop packet, current out speed: %u\n", kbps.sendKbps);
         return NULL;
