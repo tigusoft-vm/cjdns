@@ -35,6 +35,8 @@
 #include "wire/Message.h"
 #include "wire/Headers.h"
 
+#include <stdio.h>
+
 /** After this number of milliseconds, a node will be regarded as unresponsive. */
 #define UNRESPONSIVE_AFTER_MILLISECONDS (20*1024)
 
@@ -455,11 +457,12 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 {
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
-    static int drop = 0;
-    drop++;
-    drop %= 2;
-    if (drop != 0)
+
+    struct PeerLink_Kbps kbps;
+    PeerLink_kbps(ep->peerLink, &kbps);
+    if (kbps.sendKbps > 50)
     {
+        printf("drop packet, current out speed: %u\n", kbps.sendKbps);
         return NULL;
     }
     ep->bytesOut += msg->length;
