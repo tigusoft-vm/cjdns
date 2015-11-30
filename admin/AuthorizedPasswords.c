@@ -102,11 +102,19 @@ static void userSpeed_limitation(Dict* args,
                                  String* txid,
                                  struct Allocator* requestAlloc)
 {
-    struct Context* ctx = vcontext;
-    int64_t* limit_up = Dict_getInt(args, String_CONST("max_speed_up"));
-    int64_t* limit_down = Dict_getInt(args, String_CONST("max_speed_down"));
+    struct Context* context = vcontext;
+    String* passwd = Dict_getString(args, String_CONST("password"));
+    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+    String* user = Dict_getString(args, String_CONST("user"));
+    if (!user) {
+        user = passwd;
+    }
     printf("** After rpccall in fun userSpeed_limitation "
-           "upload speed:[%dkb/s], download speed:[%dkb/s].", (int)*limit_up, (int)*limit_down);
+           "upload speed:[%dkb/s], download speed:[%dkb/s] for user: [%s].\n",
+           (int)*limit_up, (int)*limit_down, user->bytes);
+
+    sendResponse(String_CONST("none"), context->admin, txid, requestAlloc);
 }
 // end -- <tiguzegna>
 void AuthorizedPasswords_init(struct Admin* admin,
@@ -134,10 +142,10 @@ void AuthorizedPasswords_init(struct Admin* admin,
     Admin_registerFunction("AuthorizedPasswords_userSpeed_limitation",
                            userSpeed_limitation, context, true,
         ((struct Admin_FunctionArg[]) {
-           // { .name = "password", .required = 1, .type = "String" },
-           // { .name = "user", .required = 0, .type = "String" },
+            { .name = "password", .required = 1, .type = "String" },
             { .name = "limit_up", .required = 1, .type = "Int" },
-            { .name = "limit_down", .required = 1, .type = "Int" }
+            { .name = "limit_down", .required = 1, .type = "Int" },
+            { .name = "user", .required = 0, .type = "String" }
         }), admin);
     // end -- <tiguzegna>
 }

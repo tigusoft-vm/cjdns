@@ -157,12 +157,12 @@ static void authorizedPasswords(List* list, struct Context* ctx)
         //String* publicKey = Dict_getString(d, String_CONST("publicKey"));
         String* ipv6 = Dict_getString(d, String_CONST("ipv6"));
         // start -- <tiguwita>
-        struct Allocator* childperlimit = Allocator_child(child);
+        Dict *l_speeds = Dict_new(child);
         int64_t* limit_up = Dict_getInt(d, String_CONST("max_speed_up"));
         int64_t* limit_down = Dict_getInt(d, String_CONST("max_speed_down"));
 
         if (!limit_up) {
-            limit_up = Allocator_malloc(childperlimit,sizeof(int64_t));
+            limit_up = Allocator_malloc(child,sizeof(int64_t));
             *limit_up = 0;
             Log_warn(ctx->logger, "No \"max_speed_up\" specified for password #[%d], "
                                   "set 0-unlimited as default",i);
@@ -176,7 +176,7 @@ static void authorizedPasswords(List* list, struct Context* ctx)
                      i, displayName->bytes, (int)*limit_up);
         }
         if (!limit_down) {
-            limit_down = Allocator_malloc(childperlimit,sizeof(int64_t));
+            limit_down = Allocator_malloc(child,sizeof(int64_t));
             *limit_down = 0;
             Log_warn(ctx->logger, "No \"max_speed_down\" specified for password #[%d], "
                                   "set 0-unlimited as default",i);
@@ -189,18 +189,16 @@ static void authorizedPasswords(List* list, struct Context* ctx)
                                   "with no download speed limitation set %d.",
                      i, displayName->bytes, (int)*limit_down);
         }
-        Dict *l_speeds = Dict_new(childperlimit);
-        //Dict_putString(l_speeds, String_CONST("password"), passwd, childperlimit);
-        Dict_putInt(l_speeds, String_CONST("limit_up"), *limit_up, childperlimit);
-        Dict_putInt(l_speeds, String_CONST("limit_down"), *limit_down, childperlimit);
-        //if (user) {
-        //    Dict_putString(l_speeds, String_CONST("user"), user, childperlimit);
-        //}
-        //Dict_putString(l_speeds, String_CONST("displayName"), displayName, childperlimit);
-        struct Context* test_ctx = ctx;
+        Dict_putString(l_speeds, String_CONST("password"), passwd, child);
+        Dict_putInt(l_speeds, String_CONST("limit_up"), *limit_up, child);
+        Dict_putInt(l_speeds, String_CONST("limit_down"), *limit_down, child);
+        if (user) {
+            Dict_putString(l_speeds, String_CONST("user"), user, child);
+        }
+        Dict_putString(l_speeds, String_CONST("displayName"), displayName, child);// why?
+
         rpcCall(String_CONST("AuthorizedPasswords_userSpeed_limitation"),
-                l_speeds, test_ctx, childperlimit);
-        Allocator_free(childperlimit);
+                l_speeds, ctx, child);
         // end -- <tiguzegna>
         Dict *args = Dict_new(child);
         uint32_t i = 1;
@@ -308,8 +306,8 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 Dict_putInt(l_speeds, String_CONST("limit_up"), *limit_up, perCallAlloc);
                 Dict_putInt(l_speeds, String_CONST("limit_down"), *limit_down, perCallAlloc);
 
-                //rpcCall(String_CONST("UDPInterface_peerSpeed_limitation"),
-                //        l_speeds, ctx, perCallAlloc);
+                rpcCall(String_CONST("UDPInterface_peerSpeed_limitation"),
+                        l_speeds, ctx, perCallAlloc);
                 // end -- <tiguzegna>
 
                 Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
@@ -353,7 +351,7 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 }
                 Dict_putInt(value, String_CONST("interfaceNumber"), ifNum, perCallAlloc);
                 Dict_putString(value, String_CONST("address"), key, perCallAlloc);
-                //rpcCall(String_CONST("UDPInterface_beginConnection"), value, ctx, perCallAlloc);
+                rpcCall(String_CONST("UDPInterface_beginConnection"), value, ctx, perCallAlloc);
                 entry = entry->next;
             }
             Allocator_free(perCallAlloc);

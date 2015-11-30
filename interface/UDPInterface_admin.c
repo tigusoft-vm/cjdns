@@ -196,10 +196,15 @@ static void peerSpeed_limitation(Dict* args,
                                  struct Allocator* requestAlloc)
 {
     struct Context* ctx = vcontext;
-    int64_t* limit_up = Dict_getInt(args, String_CONST("max_speed_up"));
-    int64_t* limit_down = Dict_getInt(args, String_CONST("max_speed_down"));
-    printf("After rpccall in fun peerSpeed_limitation "
-           "upload speed:[%dkb/s], download speed:[%dkb/s].", *limit_up, *limit_down);
+    String* publicKey = Dict_getString(args, String_CONST("publicKey"));
+    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+    printf("** After rpccall in fun peerSpeed_limitation "
+           "upload speed:[%dkb/s], download speed:[%dkb/s] "
+           "for individual peer [%s]\n.", (int)*limit_up, (int)*limit_down, publicKey->bytes);
+
+    Dict out = Dict_CONST(String_CONST("error"), String_OBJ(String_CONST("Success error!")), NULL);
+    Admin_sendMessage(&out, txid, ctx->admin);
 }
 // end -- <tiguzegna>
 void UDPInterface_admin_register(struct EventBase* base,
@@ -235,8 +240,8 @@ void UDPInterface_admin_register(struct EventBase* base,
     Admin_registerFunction("UDPInterface_peerSpeed_limitation", peerSpeed_limitation, ctx, true,
         ((struct Admin_FunctionArg[]) {
             { .name = "publicKey", .required = 1, .type = "String" },
-            { .name = "limit_up", .required = 0, .type = "Int" },
-            { .name = "limit_down", .required = 0, .type = "Int" }
+            { .name = "limit_up", .required = 1, .type = "Int" },
+            { .name = "limit_down", .required = 1, .type = "Int" }
         }), admin);
     // end -- <tiguzegna>
 }
