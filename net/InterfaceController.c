@@ -214,13 +214,7 @@ static void sendPeer(uint32_t pathfinderId,
     node->version_be = Endian_hostToBigEndian32(peer->addr.protocolVersion);
     Message_push32(msg, pathfinderId, NULL);
     Message_push32(msg, ev, NULL);
-    static int drop_packtet = 0;
-    ++drop_packtet;
-    drop_packtet %= 2;
-    if (drop_packtet == 0)
-    {
-        Iface_send(&ic->eventEmitterIf, msg);
-    }
+    Iface_send(&ic->eventEmitterIf, msg);
     Allocator_free(alloc);
 }
 
@@ -461,7 +455,13 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 {
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
-
+    static int drop = 0;
+    drop++;
+    drop %= 2;
+    if (drop != 0)
+    {
+        return NULL;
+    }
     ep->bytesOut += msg->length;
 
     int msgs = PeerLink_send(msg, ep->peerLink);
