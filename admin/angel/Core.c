@@ -330,7 +330,6 @@ int Core_main(int argc, char** argv)
 
 
     Core_init(alloc, logger, eventBase, privateKey, admin, rand, eh, NULL, false);
-    EventBase_beginTimer(eventBase);
     EventBase_beginLoop(eventBase);
     return 0;
 }
