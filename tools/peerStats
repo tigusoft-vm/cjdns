@@ -50,6 +50,4 @@ Cjdns.connectAsAnon(function (cjdns) {
     };
     again(0);
 
-}
-
-,'127.0.0.1', '11235');
+});
