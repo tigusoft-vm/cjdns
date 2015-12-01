@@ -461,12 +461,12 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 {
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
-
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
     if (kbps.sendKbps > ep->limit_up && ep->limit_up != 0)
     {
         printf("drop packet, current out speed: %u\n", kbps.sendKbps);
+        printf("limit: %u\n", ep->limit_up);
         return NULL;
     }
     ep->bytesOut += msg->length;
