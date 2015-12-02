@@ -125,13 +125,13 @@ struct TAPInterface_pvt
 static void alloc_cb(uv_handle_t* handle,
                        size_t suggested_size,
                        uv_buf_t* buf) {
-  printf("echo_alloc\n");
+  //printf("echo_alloc\n");
   buf->base = (char*) malloc(suggested_size);
   buf->len = suggested_size;
 }
 
 static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
-	printf("uv_device_queue_read\n");
+	//printf("uv_device_queue_read\n");
   uv_read_t* req;
   BOOL r;
   DWORD err;
@@ -147,10 +147,10 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
   }
-  	printf("uv devicequeue read ReadFile\n");
-	printf("handle: %ul  ", (unsigned long)handle->handle);
-	printf("bytes: %d  ", handle->read_buffer.base);
-	printf("msg len: %d\n", handle->read_buffer.len);
+  	//printf("uv devicequeue read ReadFile\n");
+	//printf("handle: %ul  ", (unsigned long)handle->handle);
+	//printf("bytes: %d  ", handle->read_buffer.base);
+	//printf("msg len: %d\n", handle->read_buffer.len);
 	
 //memset(handle->read_buffer.base, 0, handle->read_buffer.len);
   r = ReadFile(handle->handle,
@@ -158,8 +158,8 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
                handle->read_buffer.len,
                NULL,
                &req->u.io.overlapped);
-	printf("uv_device_queue_read r = %d\n", r);
-	printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
+	//printf("uv_device_queue_read r = %d\n", r);
+	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
 		switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -196,17 +196,17 @@ static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf
 
 static void postRead(struct TAPInterface_pvt* tap)
 {
-	printf("postRead!!!!!!!!!!!!!!!!!\n");
+	//printf("postRead!!!!!!!!!!!!!!!!!\n");
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
     OVERLAPPED* readol = &tap->read_overlapped;
 	memset(readol, 0, sizeof(OVERLAPPED));
-	printf("post read read file\n");
-	printf("handle: %ul  ", (unsigned long)tap->device.handle);
-	printf("bytes: %d  ", msg->bytes);
-	printf("msg len: %d  \n", 1534);
-    /*if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
+	//printf("post read read file\n");
+	//printf("handle: %u  ", (unsigned long)tap->device.handle);
+	//printf("bytes: %d  ", msg->bytes);
+	//printf("msg len: %d  \n", 1534);
+    if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
@@ -215,11 +215,11 @@ static void postRead(struct TAPInterface_pvt* tap)
     } else {
         // It doesn't matter if it returns immediately, it will also return async.
         //Log_debug(tap->log, "Read returned immediately");
-    }*/
+    }
     Log_debug(tap->log, "Posted read");
 	uv_device_queue_read(tap->device.loop, &tap->device);
-	//memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
-	//tap->device.read_buffer.len = 1534;
+	memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
+	tap->device.read_buffer.len = 1534;
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap);
@@ -229,18 +229,19 @@ static void postWrite(struct TAPInterface_pvt* tap);
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
-	printf("readCallbackB!!!!!!!!!!!!!!!!!\n");
+	//printf("readCallbackB!!!!!!!!!!!!!!!!!\n");
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
     OVERLAPPED* readol = &tap->read_overlapped;
 
-	printf("bytesRead: %d\n", bytesRead);
-	printf("write_queue_size = %d\n", tap->device.write_queue_size);
+	//printf("bytesRead: %d\n", bytesRead);
+	//printf("write_queue_size = %d\n", tap->device.write_queue_size);
     msg->length = bytesRead;
     Log_debug(tap->log, "Read [%d] bytes", msg->length);
-	printf("writeMessageCount = %d\n", tap->writeMessageCount);
-	printf("send message to iface %s\n", tap->pub.assignedName);
+	//printf("writeMessageCount = %d\n", tap->writeMessageCount);
+	//printf("send message to iface %s\n", tap->pub.assignedName);
+	
 	
     Iface_send(&tap->pub.generic, msg);
 	/*int uv_device_write(uv_loop_t* loop,
@@ -253,14 +254,14 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 	//printf("uv_device_write\n");
 	//uv_device_write(tap->device.loop, tap->write_req, (uv_stream_t*)&tap->device, &buff, 1, writeCallback); // TODO post write?
     Allocator_free(msg->alloc);
-	printf("readCallbackB: uv_read_start\n");
+	//printf("readCallbackB: uv_read_start\n");
 	postRead(tap);
-	printf("end of readCallbackB\n");
+	//printf("end of readCallbackB\n");
 }
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
-	printf("readCallback!!!!!!!!!!!!!!!!!\n");
+	//printf("readCallback!!!!!!!!!!!!!!!!!\n");
 	struct TAPInterface_pvt* tap =
 		Identity_check((struct TAPInterface_pvt*)
 			(((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
@@ -342,6 +343,7 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
         Allocator_free(tap->pendingWritesAlloc);
         tap->pendingWritesAlloc = NULL;
     }
+	
 	printf("writeCallbackB end\n");
 }
 
@@ -380,7 +382,7 @@ static int init_overlapped(uv_loop_t* loop, HANDLE fd) {
 	NTSTATUS nt_status;
 	IO_STATUS_BLOCK io_status;
 	FILE_MODE_INFORMATION mode_info;
-	printf("Check if the handle was created with FILE_FLAG_OVERLAPPED.\n");
+	//printf("Check if the handle was created with FILE_FLAG_OVERLAPPED.\n");
   /* Check if the handle was created with FILE_FLAG_OVERLAPPED. */
   //printf("pNtQueryInformationFile\n");
 	/*nt_status = pNtQueryInformationFile(fd,
@@ -399,7 +401,7 @@ static int init_overlapped(uv_loop_t* loop, HANDLE fd) {
 		return UV_EINVAL;
 	} else {
 	/* Try to associate with IOCP. */
-		printf("CreateIoCompletionPort\n");
+		//printf("CreateIoCompletionPort\n");
 		//if (!CreateIoCompletionPort(fd, loop->iocp, (ULONG_PTR)handle, 0)) {
 		if (!CreateIoCompletionPort(fd, loop->iocp, (ULONG_PTR)fd, 2)) {
 			if (ERROR_INVALID_PARAMETER == GetLastError()) {
