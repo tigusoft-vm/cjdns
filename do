@@ -158,7 +158,7 @@ function get_node_tool() {
 
 cd "$(dirname $0)" \
     || die 'failed to set directory'
-    
+
 # initialize git submodules
 git submodule sync
 git submodule update --init --recursive \

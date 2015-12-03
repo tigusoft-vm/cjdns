@@ -1,7 +1,7 @@
 
 We now use git submodules,
 just clone with --recursive and you are all set,
-and if you are a developer then also fork not just "cjdns" but also "libuv" and "gyp" 
+and if you are a developer then also fork not just "cjdns" but also "libuv" and "gyp"
 to your git server.
 
 
@@ -17,19 +17,19 @@ below for pros/cons)
 
 === HOW TO USE ===
 
-1) Regular users: no problem just do git clone YOUR_URL --recursive 
+1) Regular users: no problem just do git clone YOUR_URL --recursive
 and that is all, nothing to worry about, e.g.:
 git clone https://github.com/cjdelisle/cjdns.git  --recursive
 
 If you did a clone without --recursive, then you can instead in this directory
-execute git command: 
+execute git command:
 git submodule update --init --recursive
 
 2) Developers: if you wish to fork to own git repository a copy of cjdns,
-then also fork this repositories listed in file ".gitmodules", 
+then also fork this repositories listed in file ".gitmodules",
 fork also:
 - libuv
-- gyp 
+- gyp
 - nacl in future (when it is listed in .gitsubmodules)
 
   Clone them from same place where you cloned the cjdns from,
@@ -48,12 +48,12 @@ and this cjdroute build will use it.
 === Developers that wish to select other version of dependency ===
 
 To update a dependency you could simply:
-cd node_build/dependencies/libuv ; git pull ; cd .. ; git commit -a 
+cd node_build/dependencies/libuv ; git pull ; cd .. ; git commit -a
 
 Explanation:
 enter the directory listed in .gitmodules like node_build/dependencies/libuv
 do git fetch there, or merge, or pull etc to end up with the version of libuv
-that you wish to use. 
+that you wish to use.
 
 Confirm with "git log" this is the correct version.
 
@@ -89,7 +89,7 @@ git blame, bisecting bugs in the dependency etc.
 
 = almost as easy to download, just add --recursive to the git clone
 = if user forgets --recursive, then the ./do script does it
-= the ./do script can also skip git download by using command "NO_GIT_UPDATE=1 ./do" so this 
+= the ./do script can also skip git download by using command "NO_GIT_UPDATE=1 ./do" so this
 will not block usage of ./do for some source-bundles.zip, which some packagers might need
 = using the code without access to git is not hard, the author of some cjdns-bundle-with-deps.zip just would need
 to do git clone .. --recursive, and then remove .git and pack that.
