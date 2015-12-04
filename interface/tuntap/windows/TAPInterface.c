@@ -130,11 +130,14 @@ static void alloc_cb(uv_handle_t* handle,
   buf->len = suggested_size;
 }
 
-static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
-	//printf("uv_device_queue_read\n");
+//static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
+//uv_device_queue_read(tap->device.loop, &tap->device);
+static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
+  printf("uv_device_queue_read\n");
   uv_read_t* req;
   BOOL r;
   DWORD err;
+  uv_device_t* handle = &tap->device;
 
   //assert(handle->flags & UV_HANDLE_READING);
   //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
@@ -144,6 +147,7 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
   handle->alloc_cb((uv_handle_t*) handle, 65536, &handle->read_buffer);
   if (handle->read_buffer.len == 0) {
+    printf("read_buffer.len == 0\n");
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
   }
@@ -170,7 +174,7 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
 //  if (r) {
     //handle->flags |= UV_HANDLE_READ_PENDING;
 //    handle->reqs_pending++;
-    //uv_insert_pending_req(loop, (uv_req_t*) req);
+    //uv_insert_pending_req(tap->device.loop, (uv_req_t*) req);
 //  } else {
 //    err = GetLastError();
 //    if (r == 0 && err == ERROR_IO_PENDING) {
@@ -180,7 +184,7 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
 //    } else {
       /* Make this req pending reporting an error. */
       //SET_REQ_ERROR(req, err);
-      //uv_insert_pending_req(loop, (uv_req_t*) req);
+      //uv_insert_pending_req(tap->device.loop, (uv_req_t*) req);
 //      handle->reqs_pending++;
 //    }
 //  }
@@ -194,9 +198,11 @@ static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread);
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf);
 
+
+
 static void postRead(struct TAPInterface_pvt* tap)
 {
-	//printf("postRead!!!!!!!!!!!!!!!!!\n");
+	printf("postRead\n");
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
@@ -206,7 +212,7 @@ static void postRead(struct TAPInterface_pvt* tap)
 	//printf("handle: %u  ", (unsigned long)tap->device.handle);
 	//printf("bytes: %d  ", msg->bytes);
 	//printf("msg len: %d  \n", 1534);
-    if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
+    /*if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
@@ -215,11 +221,13 @@ static void postRead(struct TAPInterface_pvt* tap)
     } else {
         // It doesn't matter if it returns immediately, it will also return async.
         //Log_debug(tap->log, "Read returned immediately");
-    }
+    }*/
     Log_debug(tap->log, "Posted read");
-	uv_device_queue_read(tap->device.loop, &tap->device);
-	memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
-	tap->device.read_buffer.len = 1534;
+	uv_device_queue_read(tap);
+    //tap->readMsg->bytes = tap->device.read_buffer.base;
+    //tap->readMsg->length = tap->device.read_buffer.len;
+	/*memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
+	tap->device.read_buffer.len = 1534;*/
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap);
@@ -229,7 +237,7 @@ static void postWrite(struct TAPInterface_pvt* tap);
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
-	//printf("readCallbackB!!!!!!!!!!!!!!!!!\n");
+	printf("readCallbackB\n");
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
@@ -243,7 +251,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 	//printf("send message to iface %s\n", tap->pub.assignedName);
 	
 	
-    Iface_send(&tap->pub.generic, msg);
+    Iface_send(&tap->pub.generic, msg); // call sendMessage()
 	/*int uv_device_write(uv_loop_t* loop,
                     uv_write_t* req,
                     uv_device_t* handle,
@@ -261,25 +269,25 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
-	//printf("readCallback!!!!!!!!!!!!!!!!!\n");
+	printf("readCallback\n");
 	struct TAPInterface_pvt* tap =
 		Identity_check((struct TAPInterface_pvt*)
 			(((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
 	readCallbackB(tap, nread);
 }
-int uv_device_write(uv_loop_t* loop,
+/*int uv_device_write(uv_loop_t* loop,
                     uv_write_t* req,
                     uv_device_t* handle,
                     const uv_buf_t bufs[],
                     unsigned int nbufs,
-                    uv_write_cb cb);
+                    uv_write_cb cb);*/
 					
 static void postWrite(struct TAPInterface_pvt* tap)
 {
 	printf("post postWrite\n");
 	printf("writeMessageCount = %d\n", tap->writeMessageCount);
     Assert_true(!tap->isPendingWrite);
-	printf("uv_loop_alive: %d\n", uv_loop_alive(tap->device.loop));
+	//printf("uv_loop_alive: %d\n", uv_loop_alive(tap->device.loop));
     tap->isPendingWrite = 1;
     struct Message* msg = tap->writeMsgs[0];
 	uv_buf_t msg_buff = uv_buf_init(msg->bytes, msg->length);
@@ -291,12 +299,12 @@ static void postWrite(struct TAPInterface_pvt* tap)
 	OVERLAPPED* writeol = &tap->write_overlapped;
 	//uv_device_write(tap->device.loop, tap->write_req, (uv_stream_t*)&tap->device, &msg_buff, 1, writeCallback);
 	uv_device_write(tap->device.loop, (uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
-	printf("postWrite: end of uv_device_write\n");
-    /*OVERLAPPED* writeol = &tap->write_overlapped;
-	printf("write %d bytes\n", msg->bytes);
-	printf("write %d bytes\n", msg->bytes);
-	printf("write %d bytes\n", msg->bytes);
-    if (!WriteFile(tap->device.handle, msg->bytes, msg->length, NULL, writeol)) {
+	//uv_write((uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
+    /*OVERLAPPED* writeol = &tap->write_overlapped;*/
+	//printf("write %d bytes\n", msg->bytes);
+	//printf("write %d bytes\n", msg->bytes);
+	//printf("write %d bytes\n", msg->bytes);
+    /*if (!WriteFile(tap->device.handle, msg->bytes, msg->length, NULL, writeol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
@@ -332,7 +340,9 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
         Assert_true(msg->length > (int)bytesWritten);
     }
 
+    printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
     if (tap->writeMessageCount) {
+        printf("rotate write messages!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         for (int i = 0; i < tap->writeMessageCount; i++) {
             tap->writeMsgs[i] = tap->writeMsgs[i+1];
         }
@@ -343,7 +353,7 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
         Allocator_free(tap->pendingWritesAlloc);
         tap->pendingWritesAlloc = NULL;
     }
-	
+
 	printf("writeCallbackB end\n");
 }
 
@@ -361,6 +371,7 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 {
 	printf("!!!!!!send sendMessage\n");
     struct TAPInterface_pvt* tap = Identity_check((struct TAPInterface_pvt*) iface);
+	printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
     if (tap->writeMessageCount >= WRITE_MESSAGE_SLOTS) {
         Log_info(tap->log, "DROP message because the tap is lagging");
 		printf("DROP message because the tap is lagging\n");
@@ -374,6 +385,11 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
     if (tap->writeMessageCount == 1) {
 		printf("send sendMessage: postWrite\n");
         postWrite(tap);
+    }
+    else if (tap->writeMessageCount > 1)
+    {
+        printf("tap->writeMessageCount\n");
+        //postWrite(tap);
     }
     return 0;
 }
@@ -489,7 +505,7 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     Log_info(logger, "Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
-	printf("uv_read_start\n");
+	//printf("uv_read_start\n");
 	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
     assert(r == 0);
     // begin listening.
