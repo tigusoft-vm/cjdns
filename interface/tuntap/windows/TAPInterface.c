@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <io.h>
+#include <fcntl.h>
 
 #define TAP_CONTROL_CODE(request,method) \
   CTL_CODE (FILE_DEVICE_UNKNOWN, request, method, FILE_ANY_ACCESS)
@@ -95,15 +96,16 @@ static void setEnabled(HANDLE tap, int status, struct Except* eh)
 struct TAPInterface_pvt
 {
     struct TAPInterface pub;
-
-    uv_iocp_t readIocp;
+    
+	uv_device_t device;
+	
     struct Message* readMsg;
-
-    uv_iocp_t writeIocp;
+    uv_write_t write_req;
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
     /** This allocator holds messages pending write in memory until they are complete. */
     struct Allocator* pendingWritesAlloc;
     int writeMessageCount;
+    OVERLAPPED write_overlapped;
 
     int isPendingWrite;
 
@@ -121,11 +123,19 @@ static void readCallbackB(struct TAPInterface_pvt* tap);
 
 static void postRead(struct TAPInterface_pvt* tap)
 {
+    uv_device_t* handle = &tap->device;
+    uv_read_t* req = &handle->read_req;
+    memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
-    OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
-    if (!ReadFile(tap->handle, msg->bytes, 1534, NULL, readol)) {
+    handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer); // XXX
+    if (handle->read_buffer.len == 0) { // XXX
+        handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
+        return;
+    }
+	
+    if (!ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
@@ -140,10 +150,12 @@ static void postRead(struct TAPInterface_pvt* tap)
 
 static void readCallbackB(struct TAPInterface_pvt* tap)
 {
+    uv_device_t* handle = &tap->device;
+    uv_read_t* req = &handle->read_req;
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead;
-    OVERLAPPED* readol = (OVERLAPPED*) tap->readIocp.overlapped;
+    OVERLAPPED* readol = (OVERLAPPED*) req->u.io.overlapped;
     if (!GetOverlappedResult(tap->handle, readol, &bytesRead, FALSE)) {
         Assert_failure("GetOverlappedResult(read, tap): %s\n", WinFail_strerror(GetLastError()));
     }
@@ -261,27 +273,16 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     tap->log = logger;
     tap->pub.assignedName = dev->name;
     tap->pub.generic.send = sendMessage;
+    memset(&tap->write_overlapped, 0, sizeof(tap->write_overlapped));
 
-    tap->handle = CreateFile(dev->path,
-                             GENERIC_READ | GENERIC_WRITE,
-                             0,
-                             0,
-                             OPEN_EXISTING,
-                             FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
-                             0);
-
-    if (tap->handle == INVALID_HANDLE_VALUE) {
+    if (tap->handle == INVALID_HANDLE_VALUE) { // ???
         WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
     }
 
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
-    int ret;
-    if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
-        Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
-    }
-    if ((ret = uv_iocp_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
-        Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
-    }
+
+    int ret = uv_device_init(ebp->loop, &tap->device, dev->path, O_RDWR);
+    Assert_true(ret == 0);
 
     struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->handle, &ver, eh);
@@ -291,6 +292,8 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     Log_info(logger, "Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
+    ret = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
+    Assert_true(ret == 0);
     // begin listening.
     postRead(tap);
 
