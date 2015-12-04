@@ -155,7 +155,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead;
-    OVERLAPPED* readol = (OVERLAPPED*) req->u.io.overlapped;
+    OVERLAPPED* readol = (OVERLAPPED*) &req->u.io.overlapped;
     if (!GetOverlappedResult(tap->handle, readol, &bytesRead, FALSE)) {
         Assert_failure("GetOverlappedResult(read, tap): %s\n", WinFail_strerror(GetLastError()));
     }
@@ -166,11 +166,11 @@ static void readCallbackB(struct TAPInterface_pvt* tap)
     postRead(tap);
 }
 
-static void readCallback(uv_iocp_t* readIocp)
+static void readCallback(uv_stream_t* handle)
 {
     struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*)
-            (((char*)readIocp) - offsetof(struct TAPInterface_pvt, readIocp)));
+            (((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
     readCallbackB(tap);
 }
 
