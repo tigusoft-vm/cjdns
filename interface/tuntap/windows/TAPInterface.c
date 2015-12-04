@@ -130,14 +130,15 @@ static void alloc_cb(uv_handle_t* handle,
   buf->len = suggested_size;
 }
 
-//static void uv_device_queue_read(uv_loop_t* loop, uv_device_t* handle) {
-//uv_device_queue_read(tap->device.loop, &tap->device);
+// new postRead()
 static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   printf("uv_device_queue_read\n");
   uv_read_t* req;
   BOOL r;
   DWORD err;
   uv_device_t* handle = &tap->device;
+  struct Allocator* alloc = Allocator_child(tap->alloc);
+  struct Message* msg = tap->readMsg = Message_new(65536, 514, alloc);
 
   //assert(handle->flags & UV_HANDLE_READING);
   //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
@@ -157,11 +158,12 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
 	//printf("msg len: %d\n", handle->read_buffer.len);
 	
 //memset(handle->read_buffer.base, 0, handle->read_buffer.len);
-  r = ReadFile(handle->handle,
+  /*r = ReadFile(handle->handle,
                handle->read_buffer.base,
                handle->read_buffer.len,
                NULL,
-               &req->u.io.overlapped);
+               &req->u.io.overlapped);*/
+    r =  ReadFile(handle->handle, msg->bytes, 65536, NULL,  &req->u.io.overlapped);
 	//printf("uv_device_queue_read r = %d\n", r);
 	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
@@ -171,6 +173,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
             default: Assert_failure("ReadFile(uv_device_queue_read): %s\n", WinFail_strerror(GetLastError()));
         }
 	}
+	
 //  if (r) {
     //handle->flags |= UV_HANDLE_READ_PENDING;
 //    handle->reqs_pending++;
@@ -205,7 +208,7 @@ static void postRead(struct TAPInterface_pvt* tap)
 	printf("postRead\n");
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
-    struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
+    //struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
     OVERLAPPED* readol = &tap->read_overlapped;
 	memset(readol, 0, sizeof(OVERLAPPED));
 	//printf("post read read file\n");
