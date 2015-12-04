@@ -138,7 +138,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   DWORD err;
   uv_device_t* handle = &tap->device;
   struct Allocator* alloc = Allocator_child(tap->alloc);
-  struct Message* msg = tap->readMsg = Message_new(65536, 514, alloc);
+  struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
 
   //assert(handle->flags & UV_HANDLE_READING);
   //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
@@ -146,7 +146,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
 
   req = &handle->read_req;
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
-  handle->alloc_cb((uv_handle_t*) handle, 65536, &handle->read_buffer);
+  handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
   if (handle->read_buffer.len == 0) {
     printf("read_buffer.len == 0\n");
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
@@ -163,7 +163,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
                handle->read_buffer.len,
                NULL,
                &req->u.io.overlapped);*/
-    r =  ReadFile(handle->handle, msg->bytes, 65536, NULL,  &req->u.io.overlapped);
+    r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
 	//printf("uv_device_queue_read r = %d\n", r);
 	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
@@ -287,14 +287,14 @@ static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf
 					
 static void postWrite(struct TAPInterface_pvt* tap)
 {
-	printf("post postWrite\n");
-	printf("writeMessageCount = %d\n", tap->writeMessageCount);
+	//printf("post postWrite\n");
+	//printf("writeMessageCount = %d\n", tap->writeMessageCount);
     Assert_true(!tap->isPendingWrite);
 	//printf("uv_loop_alive: %d\n", uv_loop_alive(tap->device.loop));
     tap->isPendingWrite = 1;
     struct Message* msg = tap->writeMsgs[0];
 	uv_buf_t msg_buff = uv_buf_init(msg->bytes, msg->length);
-	printf("write msg len = %d\n", msg_buff.len);
+	//printf("write msg len = %d\n", msg_buff.len);
 	//for (int i = 0; i < msg_buff.len; ++i)
 	//	//printf("%c", msg_buff.base[i]);
 	//printf("\n");
@@ -318,12 +318,12 @@ static void postWrite(struct TAPInterface_pvt* tap)
         //Log_debug(tap->log, "Write returned immediately");
     }*/
     Log_debug(tap->log, "Posted write [%d] bytes", msg->length);
-	printf("end of post write\n");
+	//printf("end of post write\n");
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap)
 {
-	printf("writeCallbackB\n");
+	//printf("writeCallbackB\n");
     DWORD bytesWritten;
     OVERLAPPED* writeol = &tap->write_overlapped;
     if (!GetOverlappedResult(tap->device.handle, writeol, &bytesWritten, FALSE)) {
@@ -338,18 +338,18 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
     if (msg->length != (int)bytesWritten) {
         //Log_info(tap->log, "Message of length [%d] truncated to [%d]",
         //         msg->length, (int)bytesWritten);
-		printf("Message of length [%d] truncated to [%d]",
-                 msg->length, (int)bytesWritten);
+		//printf("Message of length [%d] truncated to [%d]",
+        //         msg->length, (int)bytesWritten);
         Assert_true(msg->length > (int)bytesWritten);
     }
 
-    printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
+    //printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
     if (tap->writeMessageCount) {
-        printf("rotate write messages!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        //printf("rotate write messages!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         for (int i = 0; i < tap->writeMessageCount; i++) {
             tap->writeMsgs[i] = tap->writeMsgs[i+1];
         }
-		printf("writeCallbackB: postWrite\n");
+		//printf("writeCallbackB: postWrite\n");
         postWrite(tap);
     } else {
         Log_debug(tap->log, "All pending writes are complete");
@@ -357,12 +357,12 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
         tap->pendingWritesAlloc = NULL;
     }
 
-	printf("writeCallbackB end\n");
+	//printf("writeCallbackB end\n");
 }
 
 static void writeCallback(uv_write_t* req, int status)
 {
-	printf("writeCallback\n");
+	//printf("writeCallback\n");
 	//assert(0);
     struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*)
