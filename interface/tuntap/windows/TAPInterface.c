@@ -271,21 +271,21 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     tap->log = logger;
     tap->pub.assignedName = dev->name;
     tap->pub.generic.send = sendMessage;
+    tap->writeMessageCount = 0;
     memset(&tap->write_overlapped, 0, sizeof(tap->write_overlapped));
-
-    if (tap->handle == INVALID_HANDLE_VALUE) { // ???
-        WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
-    }
 
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
 
     int ret = uv_device_init(ebp->loop, &tap->device, dev->path, O_RDWR);
+    if (tap->handle == INVALID_HANDLE_VALUE) { // ???
+        WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
+    }
     Assert_true(ret == 0);
 
     struct TAPInterface_Version_pvt ver = { .major = 0 };
-    getVersion(tap->handle, &ver, eh);
+    getVersion(tap->device.handle, &ver, eh);
 
-    setEnabled(tap->handle, 1, eh);
+    setEnabled(tap->device.handle, 1, eh);
 
     Log_info(logger, "Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
