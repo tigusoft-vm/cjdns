@@ -132,7 +132,7 @@ static void alloc_cb(uv_handle_t* handle,
 
 // new postRead()
 static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
-  printf("uv_device_queue_read\n");
+  //printf("uv_device_queue_read\n");
   uv_read_t* req;
   BOOL r;
   DWORD err;
@@ -148,7 +148,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
   handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
   if (handle->read_buffer.len == 0) {
-    printf("read_buffer.len == 0\n");
+    //printf("read_buffer.len == 0\n");
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
   }
@@ -205,7 +205,7 @@ static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf
 
 static void postRead(struct TAPInterface_pvt* tap)
 {
-	printf("postRead\n");
+	//printf("postRead\n");
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     //struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
@@ -240,7 +240,7 @@ static void postWrite(struct TAPInterface_pvt* tap);
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
-	printf("readCallbackB\n");
+	//printf("readCallbackB\n");
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
@@ -272,7 +272,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
-	printf("readCallback\n");
+	//printf("readCallback\n");
 	struct TAPInterface_pvt* tap =
 		Identity_check((struct TAPInterface_pvt*)
 			(((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
@@ -372,12 +372,12 @@ static void writeCallback(uv_write_t* req, int status)
 
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 {
-	printf("!!!!!!send sendMessage\n");
+	//printf("!!!!!!send sendMessage\n");
     struct TAPInterface_pvt* tap = Identity_check((struct TAPInterface_pvt*) iface);
-	printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
+	//printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
     if (tap->writeMessageCount >= WRITE_MESSAGE_SLOTS) {
         Log_info(tap->log, "DROP message because the tap is lagging");
-		printf("DROP message because the tap is lagging\n");
+		//printf("DROP message because the tap is lagging\n");
         return 0;
     }
     if (!tap->pendingWritesAlloc) {
@@ -386,12 +386,12 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
     tap->writeMsgs[tap->writeMessageCount++] = msg;
     Allocator_adopt(tap->pendingWritesAlloc, msg->alloc);
     if (tap->writeMessageCount == 1) {
-		printf("send sendMessage: postWrite\n");
+		//printf("send sendMessage: postWrite\n");
         postWrite(tap);
     }
     else if (tap->writeMessageCount > 1)
     {
-        printf("tap->writeMessageCount\n");
+        //printf("tap->writeMessageCount\n");
         //postWrite(tap);
     }
     return 0;
