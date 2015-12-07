@@ -7,7 +7,8 @@
 [submodule "libuv"]
 	path = node_build/dependencies/libuv
 	url = ../libuv.git 
-	branch =  cjdns_libuv_apidev
+	branch = cjdns-libuv-apidev-test2
+	# branch =  cjdns_libuv_apidev
 
 [submodule "gyp"]
 	path = node_build/dependencies/gyp
