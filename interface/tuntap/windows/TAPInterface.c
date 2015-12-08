@@ -129,27 +129,28 @@ static void readCallbackB(struct TAPInterface_pvt* tap);
 
 static void postRead(struct TAPInterface_pvt* tap)
 {
+    //struct Allocator* alloc = Allocator_child(tap->alloc);
+    uv_read_t* req;
+    BOOL r;
     uv_device_t* handle = &tap->device;
-    uv_read_t* req = &handle->read_req;
-    memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
     struct Allocator* alloc = Allocator_child(tap->alloc);
-    // Choose odd numbers so that the message will be aligned despite the weird header size.
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
-    handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer); // XXX
-    if (handle->read_buffer.len == 0) { // XXX
+
+    req = &handle->read_req;
+    memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
+    handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
+    if (handle->read_buffer.len == 0) {
         handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
         return;
     }
-
-    if (!ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped)) {
+    r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
+    if (!r) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
-            default: Assert_failure("ReadFile(tap): %s\n", WinFail_strerror(GetLastError()));
+            default: Assert_failure
+                ("ReadFile(uv_device_queue_read): %s\n", WinFail_strerror(GetLastError()));
         }
-    } else {
-        // It doesn't matter if it returns immediately, it will also return async.
-        //Log_debug(tap->log, "Read returned immediately");
     }
     Log_debug(tap->log, "Posted read");
 }
@@ -277,7 +278,7 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
 
     int ret = uv_device_init(ebp->loop, &tap->device, dev->path, O_RDWR);
-    if (tap->handle == INVALID_HANDLE_VALUE) { // ???
+    if (tap->handle == INVALID_HANDLE_VALUE) {
         WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
     }
     Assert_true(ret == 0);
