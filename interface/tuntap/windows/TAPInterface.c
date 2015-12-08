@@ -130,73 +130,6 @@ static void alloc_cb(uv_handle_t* handle,
   buf->len = suggested_size;
 }
 
-// new postRead()
-static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
-  //printf("uv_device_queue_read\n");
-  uv_read_t* req;
-  BOOL r;
-  //DWORD err;
-  uv_device_t* handle = &tap->device;
-  struct Allocator* alloc = Allocator_child(tap->alloc);
-  struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
-
-  //assert(handle->flags & UV_HANDLE_READING);
-  //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
-  //assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);
-
-  req = &handle->read_req;
-  memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
-  handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
-  if (handle->read_buffer.len == 0) {
-    //printf("read_buffer.len == 0\n");
-    handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
-    return;
-  }
-  	//printf("uv devicequeue read ReadFile\n");
-	//printf("handle: %ul  ", (unsigned long)handle->handle);
-	//printf("bytes: %d  ", handle->read_buffer.base);
-	//printf("msg len: %d\n", handle->read_buffer.len);
-	
-//memset(handle->read_buffer.base, 0, handle->read_buffer.len);
-  /*r = ReadFile(handle->handle,
-               handle->read_buffer.base,
-               handle->read_buffer.len,
-               NULL,
-               &req->u.io.overlapped);*/
-    r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
-	//printf("uv_device_queue_read r = %d\n", r);
-	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
-	if (!r) {
-		switch (GetLastError()) {
-            case ERROR_IO_PENDING:
-            case ERROR_IO_INCOMPLETE: break;
-            default: Assert_failure("ReadFile(uv_device_queue_read): %s\n", WinFail_strerror(GetLastError()));
-        }
-	}
-	
-//  if (r) {
-    //handle->flags |= UV_HANDLE_READ_PENDING;
-//    handle->reqs_pending++;
-    //uv_insert_pending_req(tap->device.loop, (uv_req_t*) req);
-//  } else {
-//    err = GetLastError();
-//    if (r == 0 && err == ERROR_IO_PENDING) {
-      /* The req will be processed with IOCP. */
-      //handle->flags |= UV_HANDLE_READ_PENDING;
-//      handle->reqs_pending++;
-//    } else {
-      /* Make this req pending reporting an error. */
-      //SET_REQ_ERROR(req, err);
-      //uv_insert_pending_req(tap->device.loop, (uv_req_t*) req);
-//      handle->reqs_pending++;
-//    }
-//  }
-	//printf("uv_device_queue_read buff\n");
-	//for (int i = 0; i < 100; ++i)
-		////printf("%c", handle->read_buffer.base[i]);
-	//printf("\n");
-	
-}
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread);
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf);
@@ -226,11 +159,31 @@ static void postRead(struct TAPInterface_pvt* tap)
         //Log_debug(tap->log, "Read returned immediately");
     }*/
     Log_debug(tap->log, "Posted read");
-	uv_device_queue_read(tap);
-    //tap->readMsg->bytes = tap->device.read_buffer.base;
-    //tap->readMsg->length = tap->device.read_buffer.len;
-	/*memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
-	tap->device.read_buffer.len = 1534;*/
+    uv_read_t* req;
+    BOOL r;
+    uv_device_t* handle = &tap->device;
+    struct Allocator* alloc = Allocator_child(tap->alloc);
+    struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
+
+    req = &handle->read_req;
+    memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
+    handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
+    if (handle->read_buffer.len == 0) {
+        //printf("read_buffer.len == 0\n");
+        handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
+        return;
+    }
+
+    r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
+	//printf("uv_device_queue_read r = %d\n", r);
+	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
+	if (!r) {
+		switch (GetLastError()) {
+            case ERROR_IO_PENDING:
+            case ERROR_IO_INCOMPLETE: break;
+            default: Assert_failure("ReadFile(uv_device_queue_read): %s\n", WinFail_strerror(GetLastError()));
+        }
+	}
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap);
