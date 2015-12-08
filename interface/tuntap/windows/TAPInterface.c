@@ -163,8 +163,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
-    DWORD bytesRead = nread; // TODO rm bytesRead
-    msg->length = bytesRead;
+    msg->length = nread;
     Log_debug(tap->log, "Read [%d] bytes", msg->length);
     Iface_send(&tap->pub.generic, msg);
     Allocator_free(msg->alloc);
