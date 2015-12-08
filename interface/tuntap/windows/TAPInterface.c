@@ -97,12 +97,9 @@ struct TAPInterface_pvt
 {
     struct TAPInterface pub;
 
-    //uv_iocp_t readIocp;
     struct Message* readMsg;
 	uv_device_t device;
-	OVERLAPPED read_overlapped;
 
-    //uv_iocp_t writeIocp;
 	uv_write_t write_req;
     struct Message* writeMsgs[WRITE_MESSAGE_SLOTS];
     /** This allocator holds messages pending write in memory until they are complete. */
@@ -112,8 +109,6 @@ struct TAPInterface_pvt
 
     int isPendingWrite;
 
-    //HANDLE handle;
-
     struct Log* log;
     struct Allocator* alloc;
 
@@ -121,11 +116,9 @@ struct TAPInterface_pvt
     Identity
 };
 
-// TODO
 static void alloc_cb(uv_handle_t* handle,
                        size_t suggested_size,
                        uv_buf_t* buf) {
-  //printf("echo_alloc\n");
   buf->base = (char*) malloc(suggested_size);
   buf->len = suggested_size;
 }
@@ -134,30 +127,8 @@ static void alloc_cb(uv_handle_t* handle,
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread);
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf);
 
-
-
 static void postRead(struct TAPInterface_pvt* tap)
 {
-	//printf("postRead\n");
-    //struct Allocator* alloc = Allocator_child(tap->alloc);
-    // Choose odd numbers so that the message will be aligned despite the weird header size.
-    //struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
-    OVERLAPPED* readol = &tap->read_overlapped;
-	memset(readol, 0, sizeof(OVERLAPPED));
-	//printf("post read read file\n");
-	//printf("handle: %u  ", (unsigned long)tap->device.handle);
-	//printf("bytes: %d  ", msg->bytes);
-	//printf("msg len: %d  \n", 1534);
-    /*if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
-        switch (GetLastError()) {
-            case ERROR_IO_PENDING:
-            case ERROR_IO_INCOMPLETE: break;
-            default: Assert_failure("ReadFile(tap): %s\n", WinFail_strerror(GetLastError()));
-        }
-    } else {
-        // It doesn't matter if it returns immediately, it will also return async.
-        //Log_debug(tap->log, "Read returned immediately");
-    }*/
     Log_debug(tap->log, "Posted read");
     uv_read_t* req;
     BOOL r;
@@ -169,14 +140,11 @@ static void postRead(struct TAPInterface_pvt* tap)
     memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
     handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
     if (handle->read_buffer.len == 0) {
-        //printf("read_buffer.len == 0\n");
         handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
         return;
     }
 
     r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
-	//printf("uv_device_queue_read r = %d\n", r);
-	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
 		switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -193,93 +161,36 @@ static void postWrite(struct TAPInterface_pvt* tap);
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
-	//printf("readCallbackB\n");
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
-    //OVERLAPPED* readol = &tap->read_overlapped;
-
-	//printf("bytesRead: %d\n", bytesRead);
-	//printf("write_queue_size = %d\n", tap->device.write_queue_size);
     msg->length = bytesRead;
     Log_debug(tap->log, "Read [%d] bytes", msg->length);
-	//printf("writeMessageCount = %d\n", tap->writeMessageCount);
-	//printf("send message to iface %s\n", tap->pub.assignedName);
-	
-	
-    Iface_send(&tap->pub.generic, msg); // call sendMessage()
-	/*int uv_device_write(uv_loop_t* loop,
-                    uv_write_t* req,
-                    uv_device_t* handle,
-                    const uv_buf_t bufs[],
-                    unsigned int nbufs,
-                    uv_write_cb cb)*/
-	//uv_buf_t buff = uv_buf_init(msg->bytes, msg->length);
-	//printf("uv_device_write\n");
-	//uv_device_write(tap->device.loop, tap->write_req, (uv_stream_t*)&tap->device, &buff, 1, writeCallback); // TODO post write?
+    Iface_send(&tap->pub.generic, msg);
     Allocator_free(msg->alloc);
-	//printf("readCallbackB: uv_read_start\n");
 	postRead(tap);
-	//printf("end of readCallbackB\n");
 }
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
-	//printf("readCallback\n");
 	struct TAPInterface_pvt* tap =
 		Identity_check((struct TAPInterface_pvt*)
 			(((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
 	readCallbackB(tap, nread);
 }
-/*int uv_device_write(uv_loop_t* loop,
-                    uv_write_t* req,
-                    uv_device_t* handle,
-                    const uv_buf_t bufs[],
-                    unsigned int nbufs,
-                    uv_write_cb cb);*/
 					
 static void postWrite(struct TAPInterface_pvt* tap)
 {
-	//printf("post postWrite\n");
-	//printf("writeMessageCount = %d\n", tap->writeMessageCount);
     Assert_true(!tap->isPendingWrite);
-	//printf("uv_loop_alive: %d\n", uv_loop_alive(tap->device.loop));
     tap->isPendingWrite = 1;
     struct Message* msg = tap->writeMsgs[0];
 	uv_buf_t msg_buff = uv_buf_init(msg->bytes, msg->length);
-	//printf("write msg len = %d\n", msg_buff.len);
-	//for (int i = 0; i < msg_buff.len; ++i)
-	//	//printf("%c", msg_buff.base[i]);
-	//printf("\n");
-	//uv_write(&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
-	//OVERLAPPED* writeol = &tap->write_overlapped;
-	//uv_device_write(tap->device.loop, tap->write_req, (uv_stream_t*)&tap->device, &msg_buff, 1, writeCallback);
-
-	//uv_device_write(tap->device.loop, (uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
 	uv_write((uv_write_t*)&tap->write_req, (uv_stream_t *)&tap->device, &msg_buff, 1, writeCallback);
-
-	//uv_write((uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
-    /*OVERLAPPED* writeol = &tap->write_overlapped;*/
-	//printf("write %d bytes\n", msg->bytes);
-	//printf("write %d bytes\n", msg->bytes);
-	//printf("write %d bytes\n", msg->bytes);
-    /*if (!WriteFile(tap->device.handle, msg->bytes, msg->length, NULL, writeol)) {
-        switch (GetLastError()) {
-            case ERROR_IO_PENDING:
-            case ERROR_IO_INCOMPLETE: break;
-            default: Assert_failure("WriteFile(tap): %s\n", WinFail_strerror(GetLastError()));
-        }
-    } else {
-        // It doesn't matter if it returns immediately, it will also return async.
-        //Log_debug(tap->log, "Write returned immediately");
-    }*/
     Log_debug(tap->log, "Posted write [%d] bytes", msg->length);
-	//printf("end of post write\n");
 }
 
 static void writeCallbackB(struct TAPInterface_pvt* tap)
 {
-	//printf("writeCallbackB\n");
     DWORD bytesWritten;
     OVERLAPPED* writeol = &tap->write_overlapped;
     if (!GetOverlappedResult(tap->device.handle, writeol, &bytesWritten, FALSE)) {
@@ -292,20 +203,13 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
 
     struct Message* msg = tap->writeMsgs[0];
     if (msg->length != (int)bytesWritten) {
-        //Log_info(tap->log, "Message of length [%d] truncated to [%d]",
-        //         msg->length, (int)bytesWritten);
-		//printf("Message of length [%d] truncated to [%d]",
-        //         msg->length, (int)bytesWritten);
         Assert_true(msg->length > (int)bytesWritten);
     }
 
-    //printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
     if (tap->writeMessageCount) {
-        //printf("rotate write messages!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         for (int i = 0; i < tap->writeMessageCount; i++) {
             tap->writeMsgs[i] = tap->writeMsgs[i+1];
         }
-		//printf("writeCallbackB: postWrite\n");
         postWrite(tap);
     } else {
         Log_debug(tap->log, "All pending writes are complete");
@@ -313,13 +217,10 @@ static void writeCallbackB(struct TAPInterface_pvt* tap)
         tap->pendingWritesAlloc = NULL;
     }
 
-	//printf("writeCallbackB end\n");
 }
 
 static void writeCallback(uv_write_t* req, int status)
 {
-	//printf("writeCallback\n");
-	//assert(0);
     struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*)
             (((char*)req->handle) - offsetof(struct TAPInterface_pvt, device)));
@@ -328,12 +229,9 @@ static void writeCallback(uv_write_t* req, int status)
 
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 {
-	//printf("!!!!!!send sendMessage\n");
     struct TAPInterface_pvt* tap = Identity_check((struct TAPInterface_pvt*) iface);
-	//printf("tap->writeMessageCount: %d\n", tap->writeMessageCount);
     if (tap->writeMessageCount >= WRITE_MESSAGE_SLOTS) {
         Log_info(tap->log, "DROP message because the tap is lagging");
-		//printf("DROP message because the tap is lagging\n");
         return 0;
     }
     if (!tap->pendingWritesAlloc) {
@@ -342,13 +240,7 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
     tap->writeMsgs[tap->writeMessageCount++] = msg;
     Allocator_adopt(tap->pendingWritesAlloc, msg->alloc);
     if (tap->writeMessageCount == 1) {
-		//printf("send sendMessage: postWrite\n");
         postWrite(tap);
-    }
-    else if (tap->writeMessageCount > 1)
-    {
-        //printf("tap->writeMessageCount\n");
-        //postWrite(tap);
     }
     return 0;
 }
@@ -377,59 +269,25 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     tap->pub.assignedName = dev->name;
     tap->pub.generic.send = sendMessage;
 	tap->writeMessageCount = 0;
-	memset(&tap->read_overlapped, 0, sizeof(tap->read_overlapped));
 	memset(&tap->write_overlapped, 0, sizeof(tap->write_overlapped));
 
-    /*tap->handle = CreateFile(dev->path,
-                             GENERIC_READ | GENERIC_WRITE,
-                             0,
-                             0,
-                             OPEN_EXISTING,
-                             FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
-                             0);
-*/
-
     struct EventBase_pvt* ebp = EventBase_privatize(tap->base);
-    /*int ret;
 	
-    if ((ret = uv_iocp_start(ebp->loop, &tap->readIocp, tap->handle, readCallback))) {
-        Except_throw(eh, "uv_iocp_start(readIocp): %s", uv_strerror(ret));
-    }
-    if ((ret = uv_iocp_start(ebp->loop, &tap->writeIocp, tap->handle, writeCallback))) {
-        Except_throw(eh, "uv_iocp_start(writeIocp): %s", uv_strerror(ret));
-    }*/
-	
-	//printf("init_overlapped\n");
-	//r = init_overlapped(ebp->loop, tap->device.handle);
-	//printf("r = %d\n", r);
-	
-	printf("tap_device name: %s\n", dev->name);
-	printf("tap_device path: %s\n", dev->path);
-	//SetLastError(0);
 	r = uv_device_init(ebp->loop, &tap->device, dev->path, O_RDWR);
-	printf("GetLastError: %d\n", GetLastError());
-	//ASSERT(r == 0);
-	printf("r = %d\n", r);
 	assert(r == 0);
 	
-	printf("tap->device.handle: %d\n", tap->device.handle);
-	if (tap->device.handle == INVALID_HANDLE_VALUE) {
+    if (tap->device.handle == INVALID_HANDLE_VALUE)
+    {
         WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
-		printf("INVALID_HANDLE_VALUE!!\n");
-		
     }
 	
 	struct TAPInterface_Version_pvt ver = { .major = 0 };
-	printf("getVersion\n");
     getVersion(tap->device.handle, &ver, eh);
-
-	printf("setEnabled\n");
     setEnabled(tap->device.handle, 1, eh);
 
     Log_info(logger, "Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
-	//printf("uv_read_start\n");
 	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
     assert(r == 0);
     // begin listening.
