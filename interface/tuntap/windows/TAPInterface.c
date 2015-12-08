@@ -301,7 +301,10 @@ static void postWrite(struct TAPInterface_pvt* tap)
 	//uv_write(&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
 	//OVERLAPPED* writeol = &tap->write_overlapped;
 	//uv_device_write(tap->device.loop, tap->write_req, (uv_stream_t*)&tap->device, &msg_buff, 1, writeCallback);
-	uv_device_write(tap->device.loop, (uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
+
+	//uv_device_write(tap->device.loop, (uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
+	uv_write((uv_write_t*)&tap->write_req, (uv_stream_t *)&tap->device, &msg_buff, 1, writeCallback);
+
 	//uv_write((uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
     /*OVERLAPPED* writeol = &tap->write_overlapped;*/
 	//printf("write %d bytes\n", msg->bytes);
