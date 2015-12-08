@@ -135,7 +135,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   //printf("uv_device_queue_read\n");
   uv_read_t* req;
   BOOL r;
-  DWORD err;
+  //DWORD err;
   uv_device_t* handle = &tap->device;
   struct Allocator* alloc = Allocator_child(tap->alloc);
   struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
@@ -206,7 +206,7 @@ static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf
 static void postRead(struct TAPInterface_pvt* tap)
 {
 	//printf("postRead\n");
-    struct Allocator* alloc = Allocator_child(tap->alloc);
+    //struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     //struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
     OVERLAPPED* readol = &tap->read_overlapped;
@@ -244,7 +244,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
-    OVERLAPPED* readol = &tap->read_overlapped;
+    //OVERLAPPED* readol = &tap->read_overlapped;
 
 	//printf("bytesRead: %d\n", bytesRead);
 	//printf("write_queue_size = %d\n", tap->device.write_queue_size);
@@ -299,7 +299,7 @@ static void postWrite(struct TAPInterface_pvt* tap)
 	//	//printf("%c", msg_buff.base[i]);
 	//printf("\n");
 	//uv_write(&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
-	OVERLAPPED* writeol = &tap->write_overlapped;
+	//OVERLAPPED* writeol = &tap->write_overlapped;
 	//uv_device_write(tap->device.loop, tap->write_req, (uv_stream_t*)&tap->device, &msg_buff, 1, writeCallback);
 	uv_device_write(tap->device.loop, (uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
 	//uv_write((uv_write_t*)&tap->write_req, &tap->device, &msg_buff, 1, writeCallback);
@@ -395,41 +395,6 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
         //postWrite(tap);
     }
     return 0;
-}
-
-static int init_overlapped(uv_loop_t* loop, HANDLE fd) {
-	NTSTATUS nt_status;
-	IO_STATUS_BLOCK io_status;
-	FILE_MODE_INFORMATION mode_info;
-	//printf("Check if the handle was created with FILE_FLAG_OVERLAPPED.\n");
-  /* Check if the handle was created with FILE_FLAG_OVERLAPPED. */
-  //printf("pNtQueryInformationFile\n");
-	/*nt_status = pNtQueryInformationFile(fd,
-		&io_status,
-		&mode_info,
-		sizeof(mode_info),
-		FileModeInformation);*/
-	//printf("nt_status: %d\n", nt_status);
-	 //if (nt_status != STATUS_SUCCESS) {
-	 if (nt_status != 0) {
-		return uv_translate_sys_error(GetLastError());
-	}
-	if (mode_info.Mode & FILE_SYNCHRONOUS_IO_ALERT ||
-		mode_info.Mode & FILE_SYNCHRONOUS_IO_NONALERT) {
-		/* Not overlapped. */
-		return UV_EINVAL;
-	} else {
-	/* Try to associate with IOCP. */
-		//printf("CreateIoCompletionPort\n");
-		//if (!CreateIoCompletionPort(fd, loop->iocp, (ULONG_PTR)handle, 0)) {
-		if (!CreateIoCompletionPort(fd, loop->iocp, (ULONG_PTR)fd, 2)) {
-			if (ERROR_INVALID_PARAMETER == GetLastError()) {
-			// Already associated.
-			} else {
-				return uv_translate_sys_error(GetLastError());
-			}
-		}
-	}
 }
 
 struct TAPInterface* TAPInterface_new(const char* preferredName,
