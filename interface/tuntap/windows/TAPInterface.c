@@ -448,7 +448,11 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 
 	int r;
 	
+	
+	
     struct TAPInterface_pvt* tap = Allocator_calloc(alloc, sizeof(struct TAPInterface_pvt), 1);
+	// tap->device uv_device_t
+	
     Identity_set(tap);
     tap->base = base;
     tap->alloc = alloc;
@@ -499,20 +503,19 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     }
 	
 	struct TAPInterface_Version_pvt ver = { .major = 0 };
-	printf("getVersion\n");
     getVersion(tap->device.handle, &ver, eh);
 
 	printf("setEnabled\n");
     setEnabled(tap->device.handle, 1, eh);
 
-    Log_info(logger, "Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]",
+    printf("Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]\n",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
 	//printf("uv_read_start\n");
-	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
+	// XXXXXX r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
     assert(r == 0);
     // begin listening.
-    postRead(tap);
+    // XXXXXX postRead(tap);
     return &tap->pub;
 }
 
