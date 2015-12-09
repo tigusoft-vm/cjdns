@@ -145,7 +145,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   printf("Handle flags: ");
   int i;
   int flag_tmp = handle->flags;
-  for (i=0; i<sizeof(handle->flags); ++i) { printf("%d", flag_tmp%2); flag_tmp /= 2; }
+  for (i=0; i<8*sizeof(handle->flags); ++i) { printf("%d", flag_tmp%2); flag_tmp /= 2; }
   printf("\n");
   
   /*assert(handle->flags & UV_HANDLE_READING);
@@ -174,7 +174,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
 			   
 	DWORD bytes_read = 0;
     r =  ReadFile(handle->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
-	printf("uv_device_queue_read r = %d ; read_buffer.len = %d ; bytes_read = %ul \n", 
+	printf("uv_device_queue_read r = %d ; read_buffer.len = %d ; bytes_read = %lu \n", 
 	r , handle->read_buffer.len , (unsigned long)(bytes_read) ); // TODO(rfree) check %d here
 	
 	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
