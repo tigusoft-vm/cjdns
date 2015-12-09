@@ -18,7 +18,7 @@ cd libuv/
 
 python gyp_uv.py
 
-cd "normal_dir"
+cd "$normal_dir"
 echo "Ok now building again, it should work this time"
 ./do
 
