@@ -43,7 +43,7 @@ Builder.configure({
     systemName:     SYSTEM,
     crossCompiling: process.env['CROSS'] !== undefined,
     gcc:            GCC,
-    tempDir:        '/tmp',
+    tempDir:        'C:\\tmp',
     optimizeLevel:  '-O3',
     logLevel:       process.env['Log_LEVEL'] || 'DEBUG'
 }, function (builder, waitFor) {
@@ -51,7 +51,7 @@ Builder.configure({
         '-std=c99',
         '-Wall',
         '-Wextra',
-        '-Werror',
+        //'-Werror',
         '-Wno-pointer-sign',
         '-pedantic',
         '-D', builder.config.systemName + '=1',
