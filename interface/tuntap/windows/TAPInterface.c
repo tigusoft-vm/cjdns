@@ -142,9 +142,15 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
 
   // XXXXXX assert?
-  assert(handle->flags & UV_HANDLE_READING);
+  printf("Handle flags: ");
+  int i;
+  int flag_tmp = handle->flags;
+  for (i=0; i<sizeof(handle->flags); ++i) { printf("%d", flag_tmp%2); flag_tmp /= 2; }
+  printf("\n");
+  
+  /*assert(handle->flags & UV_HANDLE_READING);
   assert(!(handle->flags & UV_HANDLE_READ_PENDING));
-  assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);
+  assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);*/
 
   req = &handle->read_req;
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
@@ -165,8 +171,12 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
                handle->read_buffer.len,
                NULL,
                &req->u.io.overlapped);*/
-    r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
-	printf("uv_device_queue_read r = %d ; read_buffer.len = %d \n", r , handle->read_buffer.len); // TODO(rfree) check %d here
+			   
+	DWORD bytes_read = 0;
+    r =  ReadFile(handle->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
+	printf("uv_device_queue_read r = %d ; read_buffer.len = %d ; bytes_read = %ul \n", 
+	r , handle->read_buffer.len , (unsigned long)(bytes_read) ); // TODO(rfree) check %d here
+	
 	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
 		switch (GetLastError()) {
@@ -216,7 +226,7 @@ static void postRead(struct TAPInterface_pvt* tap)
 	
 	printf("post read read file\n");
 	printf("handle: %u  ", (unsigned long)tap->device.handle);
-	printf("bytes: %d  ", msg->bytes);
+	//printf("bytes: %d  ", msg->bytes);
 	//printf("msg len: %d  \n", 1534);
 	
     /*if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
