@@ -132,7 +132,8 @@ static void alloc_cb(uv_handle_t* handle,
 
 // new postRead()
 static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
-  //printf("uv_device_queue_read\n");
+  printf("*** uv_device_queue_read\n");
+  
   uv_read_t* req;
   BOOL r;
   DWORD err;
@@ -140,9 +141,10 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   struct Allocator* alloc = Allocator_child(tap->alloc);
   struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
 
-  //assert(handle->flags & UV_HANDLE_READING);
-  //assert(!(handle->flags & UV_HANDLE_READ_PENDING));
-  //assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);
+  // XXXXXX assert?
+  assert(handle->flags & UV_HANDLE_READING);
+  assert(!(handle->flags & UV_HANDLE_READ_PENDING));
+  assert(handle->handle && handle->handle != INVALID_HANDLE_VALUE);
 
   req = &handle->read_req;
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
@@ -164,7 +166,7 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
                NULL,
                &req->u.io.overlapped);*/
     r =  ReadFile(handle->handle, msg->bytes, 1534, NULL,  &req->u.io.overlapped);
-	//printf("uv_device_queue_read r = %d\n", r);
+	printf("uv_device_queue_read r = %d ; read_buffer.len = %d \n", r , handle->read_buffer.len); // TODO(rfree) check %d here
 	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
 		switch (GetLastError()) {
@@ -205,16 +207,18 @@ static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf
 
 static void postRead(struct TAPInterface_pvt* tap)
 {
-	//printf("postRead\n");
+	printf("** postRead\n");
     struct Allocator* alloc = Allocator_child(tap->alloc);
     // Choose odd numbers so that the message will be aligned despite the weird header size.
     //struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
     OVERLAPPED* readol = &tap->read_overlapped;
 	memset(readol, 0, sizeof(OVERLAPPED));
-	//printf("post read read file\n");
-	//printf("handle: %u  ", (unsigned long)tap->device.handle);
-	//printf("bytes: %d  ", msg->bytes);
+	
+	printf("post read read file\n");
+	printf("handle: %u  ", (unsigned long)tap->device.handle);
+	printf("bytes: %d  ", msg->bytes);
 	//printf("msg len: %d  \n", 1534);
+	
     /*if (!ReadFile(tap->device.handle, msg->bytes, 1534, NULL, readol)) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
@@ -225,8 +229,10 @@ static void postRead(struct TAPInterface_pvt* tap)
         // It doesn't matter if it returns immediately, it will also return async.
         //Log_debug(tap->log, "Read returned immediately");
     }*/
-    Log_debug(tap->log, "Posted read");
+    
+	Log_debug(tap->log, "Posted read");
 	uv_device_queue_read(tap);
+	
     //tap->readMsg->bytes = tap->device.read_buffer.base;
     //tap->readMsg->length = tap->device.read_buffer.len;
 	/*memcpy(tap->device.read_buffer.base, msg->bytes, 1534);
@@ -511,11 +517,13 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     printf("Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]\n",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
-	//printf("uv_read_start\n");
-	// XXXXXX r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback);
+	printf("uv_read_start\n");
+	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
     assert(r == 0);
+	
     // begin listening.
     // XXXXXX postRead(tap);
+	
     return &tap->pub;
 }
 
