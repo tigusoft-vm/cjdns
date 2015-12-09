@@ -155,11 +155,12 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   req = &handle->read_req;
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
   handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
-  if (handle->read_buffer.len == 0) {
+  assert( ! (handle->read_buffer.len == 0) );
+  /*if (handle->read_buffer.len == 0) {
     printf("*** %s XXX !!! read_buffer.len == 0 *** \n" , __FUNCTION__);
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
-  }
+  }*/
   	//printf("uv devicequeue read ReadFile\n");
 	//printf("handle: %lu  ", (unsigned long)handle->handle);
 	//printf("bytes: %d  ", handle->read_buffer.base);
@@ -534,8 +535,8 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     assert(r == 0);
 	
     // begin listening.
-	printf("TAP-START: Do postRead once\n");
-	postRead(tap); // XXXXXX
+	//printf("TAP-START: Do postRead once\n");
+	//postRead(tap); // XXXXXX
 		
 	printf("TAP-START: ALL DONE in %s\n\n\n" , __FUNCTION__);
     return &tap->pub;
