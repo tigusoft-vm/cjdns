@@ -256,7 +256,9 @@ static void postWrite(struct TAPInterface_pvt* tap);
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
-	//printf("readCallbackB\n");
+	printf("readCallbackB\n");
+	assert(tap);
+	assert(tap->readMsg);
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
