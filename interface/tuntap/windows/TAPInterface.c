@@ -132,7 +132,7 @@ static void alloc_cb(uv_handle_t* handle,
 
 // new postRead()
 static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
-  printf("*** uv_device_queue_read\n");
+  printf("*** %s START\n" , __FUNCTION__);
   
   uv_read_t* req;
   BOOL r;
@@ -156,12 +156,12 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
   memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
   handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
   if (handle->read_buffer.len == 0) {
-    printf("*** read_buffer.len == 0\n");
+    printf("*** %s XXX !!! read_buffer.len == 0 *** \n" , __FUNCTION__);
     handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
     return;
   }
   	//printf("uv devicequeue read ReadFile\n");
-	//printf("handle: %ul  ", (unsigned long)handle->handle);
+	//printf("handle: %lu  ", (unsigned long)handle->handle);
 	//printf("bytes: %d  ", handle->read_buffer.base);
 	//printf("msg len: %d\n", handle->read_buffer.len);
 	
@@ -174,8 +174,9 @@ static void uv_device_queue_read(struct TAPInterface_pvt* tap) {
 			   
 	DWORD bytes_read = 0;
     r =  ReadFile(handle->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
-	printf("uv_device_queue_read r = %d ; read_buffer.len = %d ; bytes_read = %lu \n", 
-	r , handle->read_buffer.len , (unsigned long)(bytes_read) ); // TODO(rfree) check %d here
+	printf("%s uv_device_queue_read ReadFile() r = %d ; read_buffer.len = %d ; bytes_read = %d \n", 
+	  __FUNCTION__ , 
+	  r , handle->read_buffer.len , (bytes_read) ); // TODO(rfree) check %d here
 	
 	//printf("uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
 	if (!r) {
@@ -224,8 +225,7 @@ static void postRead(struct TAPInterface_pvt* tap)
     OVERLAPPED* readol = &tap->read_overlapped;
 	memset(readol, 0, sizeof(OVERLAPPED));
 	
-	printf("post read read file\n");
-	printf("handle: %u  ", (unsigned long)tap->device.handle);
+	printf("post read read file, handle: %lu\n", (unsigned long)tap->device.handle);
 	//printf("bytes: %d  ", msg->bytes);
 	//printf("msg len: %d  \n", 1534);
 	
@@ -256,7 +256,7 @@ static void postWrite(struct TAPInterface_pvt* tap);
 
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
-	printf("readCallbackB\n");
+	printf("*** %s\n", __FUNCTION__);
 	assert(tap);
 	assert(tap->readMsg);
     struct Message* msg = tap->readMsg;
@@ -267,7 +267,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 	//printf("bytesRead: %d\n", bytesRead);
 	//printf("write_queue_size = %d\n", tap->device.write_queue_size);
     msg->length = bytesRead;
-    Log_debug(tap->log, "Read [%d] bytes", msg->length);
+    printf("%s Read [%d] bytes", __FUNCTION__, msg->length);
 	//printf("writeMessageCount = %d\n", tap->writeMessageCount);
 	//printf("send message to iface %s\n", tap->pub.assignedName);
 	
@@ -504,16 +504,16 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 	//r = init_overlapped(ebp->loop, tap->device.handle);
 	//printf("r = %d\n", r);
 	
-	printf("tap_device name: %s\n", dev->name);
-	printf("tap_device path: %s\n", dev->path);
+	printf("TAP-START: tap_device name: %s\n", dev->name);
+	printf("TAP-START: tap_device path: %s\n", dev->path);
 	//SetLastError(0);
 	r = uv_device_init(ebp->loop, &tap->device, dev->path, O_RDWR);
-	printf("GetLastError: %d\n", GetLastError());
+	printf("TAP-START: GetLastError: %d\n", GetLastError());
 	//ASSERT(r == 0);
 	printf("r = %d\n", r);
 	assert(r == 0);
 	
-	printf("tap->device.handle: %d\n", tap->device.handle);
+	printf("TAP-START: tap->device.handle: %d\n", tap->device.handle);
 	if (tap->device.handle == INVALID_HANDLE_VALUE) {
         WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
 		printf("INVALID_HANDLE_VALUE!!\n");
@@ -523,22 +523,21 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 	struct TAPInterface_Version_pvt ver = { .major = 0 };
     getVersion(tap->device.handle, &ver, eh);
 
-	printf("setEnabled\n");
+	printf("TAP-START: setEnabled\n");
     setEnabled(tap->device.handle, 1, eh);
 
-    printf("Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]\n",
+    printf("TAP-START: Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]\n",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
-	printf("uv_read_start\n");
+	printf("TAP-START: uv_read_start\n");
 	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
     assert(r == 0);
 	
     // begin listening.
-	printf("Do postRead once");
+	printf("TAP-START: Do postRead once\n");
 	postRead(tap); // XXXXXX
-	
-	
-	printf("ALL DONE in %s\n" , __FUNCTION__);
+		
+	printf("TAP-START: ALL DONE in %s\n\n\n" , __FUNCTION__);
     return &tap->pub;
 }
 
