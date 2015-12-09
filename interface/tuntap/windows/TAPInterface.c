@@ -534,9 +534,8 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
     assert(r == 0);
 	
-    // begin listening.
-	//printf("TAP-START: Do postRead once\n");
-	//postRead(tap); // XXXXXX
+	printf("TAP-START: Do postRead once\n");
+	postRead(tap); // XXXXXX
 		
 	printf("TAP-START: ALL DONE in %s\n\n\n" , __FUNCTION__);
     return &tap->pub;
