@@ -20,7 +20,7 @@ var Fs = require('fs');
 var nThen = require('./nthen');
 var Semaphore = require('../../../node_build/Semaphore.js');
 
-var TIMEOUT_MILLISECONDS = 10000;
+var TIMEOUT_MILLISECONDS = 1000;
 
 var sendmsg = function (sock, addr, port, msg, txid, callback) {
     var to = setTimeout(function () {
