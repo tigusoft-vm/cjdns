@@ -533,9 +533,18 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 	printf("TAP-START: uv_read_start\n");
 	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
     assert(r == 0);
-	
+
 	printf("TAP-START: Do postRead once\n");
-	postRead(tap); // XXXXXX
+	// postRead(tap); // XXXXXX	
+	{	
+		printf("** postRead replacement \n");
+		
+		struct Allocator* alloc = Allocator_child(tap->alloc);    
+		OVERLAPPED* readol = &tap->read_overlapped;
+		memset(readol, 0, sizeof(OVERLAPPED));	
+		printf("%s (REPLACEMENT) post read read file, handle: %lu\n", __FUNCTION__, (unsigned long)tap->device.handle);	
+		uv_device_queue_read(tap); // <--- FIX THIS 
+	}
 		
 	printf("TAP-START: ALL DONE in %s\n\n\n" , __FUNCTION__);
     return &tap->pub;
