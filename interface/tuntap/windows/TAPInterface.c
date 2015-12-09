@@ -530,22 +530,36 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     printf("TAP-START: Opened TAP-Windows device [%s] version [%lu.%lu.%lu] at location [%s]\n",
              dev->name, ver.major, ver.minor, ver.debug, dev->path);
 
-	printf("TAP-START: uv_read_start\n");
-	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
-    assert(r == 0);
+	
+	
 
 	printf("TAP-START: Do postRead once\n");
 	// postRead(tap); // XXXXXX	
 	{	
 		printf("** postRead replacement \n");
 		
-		struct Allocator* alloc = Allocator_child(tap->alloc);    
-		OVERLAPPED* readol = &tap->read_overlapped;
-		memset(readol, 0, sizeof(OVERLAPPED));	
-		printf("%s (REPLACEMENT) post read read file, handle: %lu\n", __FUNCTION__, (unsigned long)tap->device.handle);	
-		uv_device_queue_read(tap); // <--- FIX THIS 
-	}
 		
+		OVERLAPPED* readol = &tap->read_overlapped;
+		memset(readol, 0, sizeof(OVERLAPPED));
+		printf("%s (REPLACEMENT) post read, handle: %lu\n", __FUNCTION__, (unsigned long)tap->device.handle);
+		
+		// printf("%s (REPLACEMENT) does one queue read:\n", __FUNCTION__);		
+		//	uv_device_queue_read(tap); // <--- FIX THIS 
+	
+		printf("%s (REPLACEMENT) does the allocation that usually is done in queue read:\n", __FUNCTION__);
+		struct Allocator* alloc = Allocator_child(tap->alloc);
+		uv_device_t* handle = &tap->device;
+		// struct Allocator* alloc = Allocator_child(tap->alloc);
+		struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
+		printf("%s (REPLACEMENT) - allocation is done.\n", __FUNCTION__);
+	
+		printf("** postRead replacement is done \n");
+	}
+
+	printf("TAP-START: uv_read_start\n");
+	r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
+    assert(r == 0);
+	
 	printf("TAP-START: ALL DONE in %s\n\n\n" , __FUNCTION__);
     return &tap->pub;
 }
