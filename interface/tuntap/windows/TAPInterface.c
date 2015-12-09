@@ -268,7 +268,7 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 	//printf("bytesRead: %d\n", bytesRead);
 	//printf("write_queue_size = %d\n", tap->device.write_queue_size);
     msg->length = bytesRead;
-    printf("%s Read [%d] bytes", __FUNCTION__, msg->length);
+    printf("%s Read [%d] bytes\n", __FUNCTION__, msg->length);
 	//printf("writeMessageCount = %d\n", tap->writeMessageCount);
 	//printf("send message to iface %s\n", tap->pub.assignedName);
 	
