@@ -762,7 +762,7 @@ static int get_device_guid(char *name,
   return 0;
 }
 
-const char* TAPDevice_find(char* preferredName,
+static const char* TAPDevice_find(char* preferredName,
                            int nlen,
                            char* buffguid,
                            int len) {
