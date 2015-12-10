@@ -41,7 +41,8 @@ if (!GCC) {
     }
 }
 
-if (SYSTEM === 'win32' && process.env['CROSS'] === undefined) {
+var isWin = /^win/.test(process.platform);
+if (isWin) {
     var TEMPDIR = 'C:\\tmp';
 } else {
     var TEMPDIR = '/tmp';
