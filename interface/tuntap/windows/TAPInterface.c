@@ -138,37 +138,37 @@ static void postRead(struct TAPInterface_pvt* tap)
 
     uv_read_t* req;
     BOOL r;
-    uv_device_t* handle = &tap->device;
+    uv_device_t* device = &tap->device;
     struct Allocator* alloc = Allocator_child(tap->alloc);
     struct Message* msg = tap->readMsg = Message_new(1534, 514, alloc);
 
     Log_debug(tap->log, "Handle flags: ");
-    //int flag_tmp = handle->flags;
+    //int flag_tmp = device->flags;
     //unsigned int i;
-    //for (i=0; i<8*sizeof(handle->flags); ++i) { printf("%d", flag_tmp%2); flag_tmp /= 2; }
+    //for (i=0; i<8*sizeof(device->flags); ++i) { printf("%d", flag_tmp%2); flag_tmp /= 2; }
     //printf("\n");
 
-    req = &handle->read_req;
+    req = &device->read_req;
     memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
-    handle->alloc_cb((uv_handle_t*) handle, 1534, &handle->read_buffer);
-    assert( ! (handle->read_buffer.len == 0) );
-    /*if (handle->read_buffer.len == 0) {
+    device->alloc_cb((uv_handle_t*) device, 1534, &device->read_buffer);
+    assert( ! (device->read_buffer.len == 0) );
+    /*if (device->read_buffer.len == 0) {
         printf("*** %s XXX !!! read_buffer.len == 0 *** \n" , __FUNCTION__);
-        handle->read_cb((uv_stream_t*) handle, UV_ENOBUFS, &handle->read_buffer);
+        device->read_cb((uv_stream_t*) device, UV_ENOBUFS, &device->read_buffer);
         return;
     }*/
     //Log_debug(tap->log, "uv devicequeue read ReadFile\n");
-    //Log_debug(tap->log, "handle: %lu  ", (unsigned long)handle->handle);
-    //Log_debug(tap->log, "bytes: %d  ", handle->read_buffer.base);
-    //Log_debug(tap->log, "msg len: %d\n", handle->read_buffer.len);
+    //Log_debug(tap->log, "device: %lu  ", (unsigned long)device->handle);
+    //Log_debug(tap->log, "bytes: %d  ", device->read_buffer.base);
+    //Log_debug(tap->log, "msg len: %d\n", device->read_buffer.len);
     
     DWORD bytes_read = 0;
-    r =  ReadFile(handle->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
+    r =  ReadFile(device->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
     Log_debug(tap->log, "%s post_write ReadFile() r = %d ; read_buffer.len = %d ; bytes_read = %d \n",
       __FUNCTION__ , 
-      r , handle->read_buffer.len , (bytes_read) ); // TODO(rfree) check %d here
+      r , device->read_buffer.len , (bytes_read) ); // TODO(rfree) check %d here
 
-    //Log_debug(tap->log, "uv_device_queue_read read_buffer.len = %d\n", handle->read_buffer.len);
+    //Log_debug(tap->log, "uv_device_queue_read read_buffer.len = %d\n", device->read_buffer.len);
     if (!r) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
