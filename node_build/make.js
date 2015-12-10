@@ -39,7 +39,7 @@ if (GCC) {
     GCC = 'gcc';
 }
 
-if (SYSTEM === 'win32') {
+if (SYSTEM === 'win32' && process.env['CROSS'] === undefined) {
     var TEMPDIR = 'C:\\tmp';
 } else {
     var TEMPDIR = '/tmp';
