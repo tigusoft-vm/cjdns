@@ -80,7 +80,6 @@ var expandArgs = function (args) {
 var sema = Semaphore.create(PROCESSORS);
 var compiler = function (compilerPath, args, callback, content) {
     args = expandArgs(args);
-    console.log("===========foo======================= compilerPath="+compilerPath);
 		// if (compilerPath != "i686-w64-mingw32-gcc") throw "INVALID COMPILER PATH (test)"; // TODO(rfree)
     sema.take(function (returnAfter) {
         var gcc = Spawn(compilerPath, args);

@@ -409,7 +409,7 @@ Builder.configure({
     }).nThen(waitFor());
 
 }).build(function (builder, waitFor) {
-
+    console.log("Compiler name " + builder.config.gcc)
     builder.buildExecutable('client/cjdroute2.c', 'cjdroute');
 
     builder.buildExecutable('contrib/c/publictoip6.c');
@@ -452,7 +452,7 @@ Builder.configure({
     process.exit(1);
 
 }).complete(function (builder, waitFor) {
-
+    console.log("Compiler name " + builder.config.gcc)
     if (builder.failure) {
         process.exit(1);
     }
