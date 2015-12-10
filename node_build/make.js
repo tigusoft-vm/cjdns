@@ -41,13 +41,20 @@ if (!GCC) {
     }
 }
 
+if (SYSTEM === 'win32') {
+    var TEMPDIR = 'C:\\tmp';
+} else {
+    var TEMPDIR = '/tmp';
+}
+
 Builder.configure({
     systemName:     SYSTEM,
     crossCompiling: process.env['CROSS'] !== undefined,
     gcc:            GCC,
-    tempDir:        'C:\\tmp',
+    tempDir:        TEMPDIR,
     optimizeLevel:  '-O3',
     logLevel:       process.env['Log_LEVEL'] || 'DEBUG'
+
 }, function (builder, waitFor) {
     builder.config.cflags.push(
         '-std=c99',
