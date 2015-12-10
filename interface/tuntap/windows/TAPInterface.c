@@ -28,9 +28,7 @@
 #include "wire/Message.h"
 
 #include <stdio.h>
-#include <assert.h>
 #include <windows.h>
-#include <winternl.h>
 #include <io.h>
 #include <fcntl.h>
 
@@ -151,7 +149,7 @@ static void postRead(struct TAPInterface_pvt* tap)
     req = &device->read_req;
     memset(&req->u.io.overlapped, 0, sizeof(req->u.io.overlapped));
     device->alloc_cb((uv_handle_t*) device, 1534, &device->read_buffer);
-    assert( ! (device->read_buffer.len == 0) );
+    Assert_true( ! (device->read_buffer.len == 0) );
     /*if (device->read_buffer.len == 0) {
         printf("*** %s XXX !!! read_buffer.len == 0 *** \n" , __FUNCTION__);
         device->read_cb((uv_stream_t*) device, UV_ENOBUFS, &device->read_buffer);
@@ -161,7 +159,7 @@ static void postRead(struct TAPInterface_pvt* tap)
     //Log_debug(tap->log, "device: %lu  ", (unsigned long)device->handle);
     //Log_debug(tap->log, "bytes: %d  ", device->read_buffer.base);
     //Log_debug(tap->log, "msg len: %d\n", device->read_buffer.len);
-    
+
     DWORD bytes_read = 0;
     r =  ReadFile(device->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
     Log_debug(tap->log, "%s post_write ReadFile() r = %d ; read_buffer.len = %d ; bytes_read = %d \n",
@@ -188,8 +186,8 @@ static void postWrite(struct TAPInterface_pvt* tap);
 static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
 {
     Log_debug(tap->log, "*** %s\n", __FUNCTION__);
-    assert(tap);
-    assert(tap->readMsg);
+    Assert_true(tap);
+    Assert_true(tap->readMsg);
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
     DWORD bytesRead = nread; // TODO rm bytesRead
@@ -338,7 +336,7 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
     Log_debug(tap->log, "TAP-START: GetLastError: %d\n", GetLastError());
     //ASSERT(r == 0);
     Log_debug(tap->log, "r = %d\n", r);
-    assert(r == 0);
+    Assert_true(r == 0);
 
     if (tap->device.handle == INVALID_HANDLE_VALUE) {
         WinFail_fail(eh, "CreateFile(tapDevice)", GetLastError());
@@ -372,7 +370,7 @@ struct TAPInterface* TAPInterface_new(const char* preferredName,
 
     Log_debug(tap->log, "TAP-START: uv_read_start\n");
     r = uv_read_start((uv_stream_t *)&tap->device, alloc_cb, readCallback); // ZZZ
-    assert(r == 0);
+    Assert_true(r == 0);
 
     Log_debug(tap->log, "TAP-START: ALL DONE in %s\n\n\n" , __FUNCTION__);
     return &tap->pub;
