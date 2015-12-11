@@ -261,6 +261,16 @@ static int get_device_guid(
     return 0;
 }
 
+int TAPDevice_get_device_guid(
+    char *name,
+    int name_size,
+    char *actual_name,
+    int actual_name_size,
+    struct Except* eh)
+{
+	return get_device_guid(name, name_size, actual_name, actual_name_size, eh);
+}
+
 struct TAPDevice* TAPDevice_find(const char* preferredName,
                                  struct Except* eh,
                                  struct Allocator* alloc)

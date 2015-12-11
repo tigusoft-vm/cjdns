@@ -123,7 +123,7 @@ Builder.configure({
         }
     }
 
-    if (builder.config.compilerType.isClang) {
+    if (/clang/i.test(builder.config.gcc) || builder.config.systemName === 'darwin') {
         // blows up when preprocessing before js preprocessor
         builder.config.cflags.push(
             '-Wno-invalid-pp-token',
@@ -358,11 +358,6 @@ Builder.configure({
                 args.push.apply(args, env.GYP_ADDITIONAL_ARGS.split(' '));
             }
 
-            if (['freebsd', 'openbsd'].indexOf(builder.config.systemName) !== -1) {
-                // This platform lacks a functioning sem_open implementation, therefore...
-                args.push('--no-parallel');
-            }
-
             var gyp = Spawn(python, args, {env:env, stdio:'inherit'});
             gyp.on('error', function () {
                 console.error("couldn't launch gyp [" + python + "]");
@@ -416,6 +411,7 @@ Builder.configure({
     builder.buildExecutable('contrib/c/privatetopublic.c');
     builder.buildExecutable('contrib/c/sybilsim.c');
     builder.buildExecutable('contrib/c/makekeys.c');
+	builder.buildExecutable('interface/tuntap/windows/main_dns.c');
 
     builder.buildExecutable('crypto/random/randombytes.c');
 
