@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
 	{
 		printf("Internal error\n");
 		printf("Error code %d\n", ret);
+		return 2;
 	}
 	
 	return 0;
