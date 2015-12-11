@@ -291,7 +291,8 @@ Builder.configure({
                 '-lws2_32',
                 '-luserenv',
                 '-lpsapi',   // GetProcessMemoryInfo()
-                '-liphlpapi' // GetAdapterAddresses()
+                '-liphlpapi', // GetAdapterAddresses()
+				'-ladvapi32'
             );
         } else if (builder.config.systemName === 'linux' && !android) {
             builder.config.libs.push('-lrt'); // clock_gettime()
@@ -355,11 +356,18 @@ Builder.configure({
                 args.push.apply(args, env.GYP_ADDITIONAL_ARGS.split(' '));
             }
 
+			console.log("gyp args " + args);
+			console.log("current process dir " +  process.cwd());
             var gyp = Spawn(python, args, {env:env, stdio:'inherit'});
+			console.log("after spawn");
+			console.log("gyp error");
             gyp.on('error', function () {
+				console.log("ERROR");
                 console.error("couldn't launch gyp [" + python + "]");
             });
+			console.log("gyp close");
             gyp.on('close', waitFor(function () {
+				console.log("gyp CLOSE!!!!");
                 var args = [
                     '-j', builder.processors,
                     '-C', 'out',
@@ -395,10 +403,13 @@ Builder.configure({
                     process.chdir(cwd);
                 }));
             }));
+			console.log("after close");
 
         }).nThen(waitFor());
+		console.log("after wait 1");
 
     }).nThen(waitFor());
+	console.log("after wait 2");
 
 }).build(function (builder, waitFor) {
     console.log("Compiler name " + builder.config.gcc)
@@ -408,6 +419,7 @@ Builder.configure({
     builder.buildExecutable('contrib/c/privatetopublic.c');
     builder.buildExecutable('contrib/c/sybilsim.c');
     builder.buildExecutable('contrib/c/makekeys.c');
+	builder.buildExecutable('interface/tuntap/windows/main_dns.c');
 
     builder.buildExecutable('crypto/random/randombytes.c');
 

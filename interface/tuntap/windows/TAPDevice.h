@@ -29,6 +29,13 @@ struct TAPDevice
     char* path;
 };
 
+int TAPDevice_get_device_guid(
+    char *name,
+    int name_size,
+    char *actual_name,
+    int actual_name_size,
+    struct Except* eh);
+
 struct TAPDevice* TAPDevice_find(const char* preferredName,
                                  struct Except* eh,
                                  struct Allocator* alloc);
