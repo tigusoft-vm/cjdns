@@ -1,0 +1,9 @@
+#!/bin/bash
+
+for i in *.exe version.txt
+do
+  ./build-publish "$i" || { echo "Failed for file $i" ; exit 1 ; }
+done
+
+echo "All done"
+
