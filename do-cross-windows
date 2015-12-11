@@ -1,0 +1,2 @@
+#!/bin/bash
+SYSTEM=win32 CROSS_COMPILE=i686-w64-mingw32- ./cross-do
