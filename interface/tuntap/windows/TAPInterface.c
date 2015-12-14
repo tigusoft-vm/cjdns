@@ -122,10 +122,10 @@ static void alloc_cb(uv_handle_t* handle,
   buf->len = suggested_size;
 }
 
-static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread);
+static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread, const uv_buf_t* buf);
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf);
 
-static void postRead(struct TAPInterface_pvt* tap)
+static void postRead(struct TAPInterface_pvt* tap, ssize_t nread, const uv_buf_t* buf)
 {
     Log_debug(tap->log, "** postRead\n");
     // Choose odd numbers so that the message will be aligned despite the weird header size.
@@ -162,18 +162,25 @@ static void postRead(struct TAPInterface_pvt* tap)
 
     DWORD bytes_read = 0;
     r =  ReadFile(device->handle, msg->bytes, 1534, &bytes_read,  &req->u.io.overlapped);
+	//printf("msg->length: %d\n", msg->length);
+	//printf("buf->len: %d\n", buf->len);
+	//printf("nread: %d\n", nread);
+    //msg->bytes = buf->base; // XXX
+	msg->length = nread;
+	printf("memcpy %d bytes\n", nread);
+	memcpy(msg->bytes, buf->base, nread);
     Log_debug(tap->log, "%s post_write ReadFile() r = %d ; read_buffer.len = %d ; bytes_read = %d \n",
       __FUNCTION__ , 
       r , device->read_buffer.len , (bytes_read) ); // TODO(rfree) check %d here
 
     //Log_debug(tap->log, "uv_device_queue_read read_buffer.len = %d\n", device->read_buffer.len);
-    if (!r) {
+    /*if (!r) {
         switch (GetLastError()) {
             case ERROR_IO_PENDING:
             case ERROR_IO_INCOMPLETE: break;
             default: Assert_failure("ReadFile(uv_device_queue_read): %s\n", WinFail_strerror(GetLastError()));
         }
-    }
+    }*/
 
     Log_debug(tap->log, "Posted read");
 }
@@ -183,18 +190,19 @@ static void writeCallback(uv_write_t* req, int status);
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface);
 static void postWrite(struct TAPInterface_pvt* tap);
 
-static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
+static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread, const uv_buf_t* buf)
 {
+	printf("readCallbackB, nread: %d\n", nread);
     Log_debug(tap->log, "*** %s\n", __FUNCTION__);
     Assert_true(tap);
     Assert_true(tap->readMsg);
     struct Message* msg = tap->readMsg;
     tap->readMsg = NULL;
-    DWORD bytesRead = nread; // TODO rm bytesRead
+    //DWORD bytesRead = nread; // TODO rm bytesRead
 
     //Log_debug(tap->log, "bytesRead: %d\n", bytesRead);
     //Log_debug(tap->log, "write_queue_size = %d\n", tap->device.write_queue_size);
-    msg->length = bytesRead;
+    msg->length = nread;
     Log_debug(tap->log, "%s Read [%d] bytes\n", __FUNCTION__, msg->length);
     //Log_debug(tap->log, "writeMessageCount = %d\n", tap->writeMessageCount);
     //Log_debug(tap->log, "send message to iface %s\n", tap->pub.assignedName);
@@ -202,16 +210,17 @@ static void readCallbackB(struct TAPInterface_pvt* tap, ssize_t nread)
     Iface_send(&tap->pub.generic, msg); // call sendMessage()
     Allocator_free(msg->alloc);
     //Log_debug(tap->log, "readCallbackB: uv_read_start\n");
-    postRead(tap);
+    postRead(tap, nread, buf);
     //Log_debug(tap->log, "end of readCallbackB\n");
 }
 
 static void readCallback(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
+	printf("readCallback\n");
     struct TAPInterface_pvt* tap =
         Identity_check((struct TAPInterface_pvt*)
             (((char*)handle) - offsetof(struct TAPInterface_pvt, device)));
-    readCallbackB(tap, nread);
+    readCallbackB(tap, nread, buf);
 }
 
 static void postWrite(struct TAPInterface_pvt* tap)
