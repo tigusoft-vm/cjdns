@@ -411,7 +411,9 @@ Builder.configure({
     builder.buildExecutable('contrib/c/privatetopublic.c');
     builder.buildExecutable('contrib/c/sybilsim.c');
     builder.buildExecutable('contrib/c/makekeys.c');
-	builder.buildExecutable('interface/tuntap/windows/main_dns.c');
+    if (builder.config.systemName === 'win32') {
+        builder.buildExecutable('interface/tuntap/windows/main_dns.c');
+    }
 
     builder.buildExecutable('crypto/random/randombytes.c');
 
