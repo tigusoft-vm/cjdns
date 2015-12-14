@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <windows.h>
-#include <Winreg.h>
+#include <winreg.h>
 
 #define NAME_SIZE 256
 #define REG_KEY_PATH_PREFIX "SYSTEM\\ControlSet001\\services\\TCPIP6\\Parameters\\Interfaces\\"
