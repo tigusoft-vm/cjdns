@@ -197,7 +197,7 @@ static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* mes
 
     Assert_true(!((uintptr_t)msg->bytes % 4) && "Alignment fault");
 
-    printf("iface name: %s\n", context->ifName->bytes);
+    printf("handleEvent2 iface name: %s\n", context->ifName->bytes);
     Iface_send(&context->pub.generic.iface, msg);
 }
 
