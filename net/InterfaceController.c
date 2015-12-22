@@ -486,6 +486,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
         }
 
         printf("sendFromSwitch\n");
+        printf("iface name: %s\n", ep->ici->name->bytes);
         Iface_send(&ep->ici->pub.addrIf, msg);
     }
     return NULL;
