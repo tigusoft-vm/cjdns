@@ -485,6 +485,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
             Log_debug(ep->ici->ic->logger, "Outgoing message to [%s]", printedAddr);
         }
 
+        printf("sendFromSwitch\n");
         Iface_send(&ep->ici->pub.addrIf, msg);
     }
     return NULL;

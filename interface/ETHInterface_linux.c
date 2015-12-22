@@ -77,6 +77,7 @@ static void sendMessageInternal(struct Message* message,
     Hex_encode(buff, sizeof(buff), (uint8_t*)addr, sizeof(*addr));
     Log_debug(context->logger, "Sending ethernet frame to [%s]", buff);
     */
+    printf("sendMessageInternal\n");
 
     if (sendto(context->socket,
                message->bytes,
@@ -101,6 +102,8 @@ static void sendMessageInternal(struct Message* message,
 
 static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 {
+    printf("sendMessage\n");
+    printf("message len: %d\n", msg->length);
     struct ETHInterface_pvt* ctx =
         Identity_containerOf(iface, struct ETHInterface_pvt, pub.generic.iface);
 
@@ -133,6 +136,7 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 
 static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* messageAlloc)
 {
+    printf("handleEvent2\n");
     struct Message* msg = Message_new(MAX_PACKET_SIZE, PADDING, messageAlloc);
 
     struct sockaddr_ll addr;
@@ -198,6 +202,7 @@ static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* mes
 
 static void handleEvent(void* vcontext)
 {
+    printf("handleEvent\n");
     struct ETHInterface_pvt* context = Identity_check((struct ETHInterface_pvt*) vcontext);
     struct Allocator* messageAlloc = Allocator_child(context->pub.generic.alloc);
     handleEvent2(context, messageAlloc);
@@ -238,6 +243,8 @@ struct ETHInterface* ETHInterface_new(struct EventBase* eventBase,
     struct ETHInterface_pvt* ctx = Allocator_calloc(alloc, sizeof(struct ETHInterface_pvt), 1);
     Identity_set(ctx);
     ctx->pub.generic.iface.send = sendMessage;
+    printf("set iface.send to sendMessage()\n");
+    printf("function address: %lu\n", ctx->pub.generic.iface.send);
     ctx->pub.generic.alloc = alloc;
     ctx->logger = logger;
 
@@ -287,3 +294,4 @@ struct ETHInterface* ETHInterface_new(struct EventBase* eventBase,
 
     return &ctx->pub;
 }
+

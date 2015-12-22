@@ -51,7 +51,7 @@ Builder.configure({
         '-std=c99',
         '-Wall',
         '-Wextra',
-        '-Werror',
+        //'-Werror',
         '-Wno-pointer-sign',
         '-pedantic',
         '-D', builder.config.systemName + '=1',
