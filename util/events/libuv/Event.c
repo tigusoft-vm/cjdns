@@ -20,6 +20,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 struct Event_pvt
 {
@@ -61,6 +62,9 @@ struct Event* Event_socketRead(void (* const callback)(void* callbackContext),
                                struct Allocator* allocator,
                                struct Except* eh)
 {
+    printf("STARTING ==================================== %s \n" , __FUNCTION__);
+/*
+
     struct EventBase_pvt* base = EventBase_privatize(eventBase);
     struct Allocator* alloc = Allocator_child(allocator);
     struct Event_pvt* out = Allocator_clone(alloc, (&(struct Event_pvt) {
@@ -81,4 +85,6 @@ struct Event* Event_socketRead(void (* const callback)(void* callbackContext),
     Allocator_onFree(alloc, freeEvent, out);
 
     return &out->pub;
+*/
+return NULL;
 }
