@@ -20,7 +20,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
 #include <stdio.h>
 
 struct Event_pvt
@@ -63,6 +62,9 @@ struct Event* Event_socketRead(void (* const callback)(void* callbackContext),
                                struct Allocator* allocator,
                                struct Except* eh)
 {
+    printf("STARTING ==================================== %s \n" , __FUNCTION__);
+/*
+
     struct EventBase_pvt* base = EventBase_privatize(eventBase);
     struct Allocator* alloc = Allocator_child(allocator);
     struct Event_pvt* out = Allocator_clone(alloc, (&(struct Event_pvt) {
@@ -76,12 +78,13 @@ struct Event* Event_socketRead(void (* const callback)(void* callbackContext),
     uv_poll_init(base->loop, &out->handler, s);
 
     // == -1 check, removed because uv_poll_start always returns 0
- //   uv_poll_start(&out->handler, UV_READABLE, handleEvent);
-    printf("\n\n### SKIPPING starting the read in %s in %s\n\n" , __FUNCTION__, __FILE__);
+    uv_poll_start(&out->handler, UV_READABLE, handleEvent);
 
     out->handler.data = out;
 
     Allocator_onFree(alloc, freeEvent, out);
 
     return &out->pub;
+*/
+return NULL;
 }
