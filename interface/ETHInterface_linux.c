@@ -153,6 +153,10 @@ static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* mes
                       (struct sockaddr*) &addr,
                       &addrLen);
 
+    for (int i = 0; i < msg->length; ++i) {
+        printf("%c", msg->bytes[i]);
+    }
+    printf("\n");
     if (rc < ETHInterface_Header_SIZE) {
         Log_debug(context->logger, "Failed to receive eth frame");
         return;
