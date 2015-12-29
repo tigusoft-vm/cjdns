@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# http://www.anta.net/misc/telnet-troubleshooting/irc.shtml
+
+
+function say {
+	echo "$@"
+}
+
+sleep 2
+
+say NICK bot-$HOSTNAME
+say USER bot-$HOSTNAME 8 '*' :$HOSTNAME
+sleep 2
+
+say JOIN '#bot'
+
+while true
+do
+#	say NICK bot-$HOSTNAME
+#	say USER bot-$HOSTNAME 8 '*' :$HOSTNAME
+#	say JOIN '#bot'
+	say "PONG"
+
+	time=$(date +%Y-%m-%d_%H:%M:%S)
+
+	say PRIVMSG '#bot' Hello...$time.
+	sleep 1
+done
+

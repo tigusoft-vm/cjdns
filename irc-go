@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./irc-say  | socat STDIN TCP6-CONNECT:h.irc.meshnet.pl:6667
+
