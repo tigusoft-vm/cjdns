@@ -136,7 +136,6 @@ static Iface_DEFUN sendMessage(struct Message* msg, struct Iface* iface)
 
 static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* messageAlloc)
 {
-/*
     printf("handleEvent2\n");
     struct Message* msg = Message_new(MAX_PACKET_SIZE, PADDING, messageAlloc);
 
@@ -154,10 +153,6 @@ static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* mes
                       (struct sockaddr*) &addr,
                       &addrLen);
 
-    for (int i = 0; i < msg->length; ++i) {
-        printf("%c", msg->bytes[i]);
-    }
-    printf("\n");
     if (rc < ETHInterface_Header_SIZE) {
         Log_debug(context->logger, "Failed to receive eth frame");
         return;
@@ -204,18 +199,15 @@ static void handleEvent2(struct ETHInterface_pvt* context, struct Allocator* mes
 
     printf("handleEvent2 iface name: %s\n", context->ifName->bytes);
     Iface_send(&context->pub.generic.iface, msg);
-*/
 }
 
 static void handleEvent(void* vcontext)
 {
-/*
     printf("handleEvent\n");
     struct ETHInterface_pvt* context = Identity_check((struct ETHInterface_pvt*) vcontext);
     struct Allocator* messageAlloc = Allocator_child(context->pub.generic.alloc);
     handleEvent2(context, messageAlloc);
     Allocator_free(messageAlloc);
-*/
 }
 
 List* ETHInterface_listDevices(struct Allocator* alloc, struct Except* eh)
@@ -250,7 +242,6 @@ struct ETHInterface* ETHInterface_new(struct EventBase* eventBase,
                                       struct Log* logger)
 {
     struct ETHInterface_pvt* ctx = Allocator_calloc(alloc, sizeof(struct ETHInterface_pvt), 1);
-/*
     Identity_set(ctx);
     ctx->pub.generic.iface.send = sendMessage;
     printf("set iface.send to sendMessage()\n");
@@ -301,7 +292,6 @@ struct ETHInterface* ETHInterface_new(struct EventBase* eventBase,
     Socket_makeNonBlocking(ctx->socket);
 
     Event_socketRead(handleEvent, ctx, ctx->socket, eventBase, alloc, exHandler);
-*/
 
     return &ctx->pub;
 }
