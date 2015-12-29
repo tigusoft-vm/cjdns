@@ -21,6 +21,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <stdio.h>
+
 struct Event_pvt
 {
     struct Event pub;
@@ -74,7 +76,8 @@ struct Event* Event_socketRead(void (* const callback)(void* callbackContext),
     uv_poll_init(base->loop, &out->handler, s);
 
     // == -1 check, removed because uv_poll_start always returns 0
-    uv_poll_start(&out->handler, UV_READABLE, handleEvent);
+ //   uv_poll_start(&out->handler, UV_READABLE, handleEvent);
+    printf("\n\n### SKIPPING starting the read in %s in %s\n\n" , __FUNCTION__, __FILE__);
 
     out->handler.data = out;
 
