@@ -24,7 +24,7 @@
 #include "crypto/AddressCalc.h"
 #include "util/Defined.h"
 #include "util/AddrTools.h"
-
+#include <stdio.h>
 struct TUNAdapter_pvt
 {
     struct TUNAdapter pub;
@@ -35,8 +35,13 @@ struct TUNAdapter_pvt
 
 static Iface_DEFUN incomingFromTunIf(struct Message* msg, struct Iface* tunIf)
 {
-    struct TUNAdapter_pvt* ud = Identity_containerOf(tunIf, struct TUNAdapter_pvt, pub.tunIf);
+    printf("incomingFromTunIf\n");
+    for (int i = 0; i < msg->length; ++i) {
+        printf("%c", msg->bytes[i]);
+    }
+    printf("\n");
 
+    struct TUNAdapter_pvt* ud = Identity_containerOf(tunIf, struct TUNAdapter_pvt, pub.tunIf);
     uint16_t ethertype = TUNMessageType_pop(msg, NULL);
 
     int version = Headers_getIpVersion(msg->bytes);
@@ -106,6 +111,12 @@ static Iface_DEFUN incomingFromTunIf(struct Message* msg, struct Iface* tunIf)
 
 static Iface_DEFUN sendToTunIf(struct Message* msg, struct TUNAdapter_pvt* ud)
 {
+    printf("sendToTunIf\n");
+    for (int i = 0; i < msg->length; ++i) {
+        printf("%c", msg->bytes[i]);
+    }
+    printf("\n");
+
     if (!ud->pub.tunIf.connectedIf) {
         Log_debug(ud->log, "DROP message for tun because no device is defined");
         return NULL;
@@ -115,6 +126,12 @@ static Iface_DEFUN sendToTunIf(struct Message* msg, struct TUNAdapter_pvt* ud)
 
 static Iface_DEFUN incomingFromIpTunnelIf(struct Message* msg, struct Iface* ipTunnelIf)
 {
+    printf("incomingFromIpTunnelIf\n");
+    for (int i = 0; i < msg->length; ++i) {
+        printf("%c", msg->bytes[i]);
+    }
+    printf("\n");
+
     struct TUNAdapter_pvt* ud =
         Identity_containerOf(ipTunnelIf, struct TUNAdapter_pvt, pub.ipTunnelIf);
     return sendToTunIf(msg, ud);
@@ -122,6 +139,12 @@ static Iface_DEFUN incomingFromIpTunnelIf(struct Message* msg, struct Iface* ipT
 
 static Iface_DEFUN incomingFromMagicIf(struct Message* msg, struct Iface* magicIf)
 {
+    printf("incomingFromMagicIf\n");
+    for (int i = 0; i < msg->length; ++i) {
+        printf("%c", msg->bytes[i]);
+    }
+    printf("\n");
+
     struct TUNAdapter_pvt* ud =
         Identity_containerOf(magicIf, struct TUNAdapter_pvt, pub.magicIf);
     return sendToTunIf(msg, ud);
@@ -130,6 +153,12 @@ static Iface_DEFUN incomingFromMagicIf(struct Message* msg, struct Iface* magicI
 static Iface_DEFUN incomingFromUpperDistributorIf(struct Message* msg,
                                                   struct Iface* upperDistributorIf)
 {
+    printf("incomingFromUpperDistributorIf\n");
+    for (int i = 0; i < msg->length; ++i) {
+        printf("%c", msg->bytes[i]);
+    }
+    printf("\n");
+
     struct TUNAdapter_pvt* ud =
         Identity_containerOf(upperDistributorIf, struct TUNAdapter_pvt, pub.upperDistributorIf);
     Assert_true(msg->length >= RouteHeader_SIZE + DataHeader_SIZE);
