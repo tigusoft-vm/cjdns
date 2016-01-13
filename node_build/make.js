@@ -412,6 +412,7 @@ Builder.configure({
     builder.buildExecutable('contrib/c/makekeys.c');
     if (builder.config.systemName === 'win32') {
         builder.buildExecutable('interface/tuntap/windows/main_dns.c');
+		builder.buildExecutable('interface/tuntap/windows/set_dns_gui.c');
     }
 
     builder.buildExecutable('crypto/random/randombytes.c');
