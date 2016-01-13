@@ -1,5 +1,7 @@
 #include <windows.h>
 
+#define UNUSED(expr) do { (void)(expr); } while (0)
+
 LPSTR main_window_name = "Main window";
 MSG msg;
 
@@ -42,6 +44,7 @@ WNDCLASSEX create_main_window(HINSTANCE hInstance)
 
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
 {
+	FreeConsole();
 	WNDCLASSEX main_window = create_main_window(hInstance);
     if(!RegisterClassEx(&main_window))
     {
@@ -50,15 +53,24 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     }
 	HWND hwnd;
 	hwnd = CreateWindowEx( WS_EX_CLIENTEDGE, main_window_name, "Set DNS", WS_OVERLAPPEDWINDOW,
-    CW_USEDEFAULT, CW_USEDEFAULT, 240, 120, NULL, NULL, hInstance, NULL );
+    CW_USEDEFAULT, CW_USEDEFAULT, 340, 220, NULL, NULL, hInstance, NULL );
 	
 	if(hwnd == NULL)
     {
         MessageBox(NULL, "CreateWindowEx error", "", MB_ICONEXCLAMATION);
         return 1;
     }
+	HWND hComboDNS1 = CreateWindowEx(WS_EX_CLIENTEDGE, "COMBOBOX", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER |
+		CBS_DROPDOWN, 50, 50, 150, 200, hwnd, NULL, hInstance, NULL);
+	UNUSED(hComboDNS1);
+
+	HWND hComboDNS2 = CreateWindowEx(WS_EX_CLIENTEDGE, "COMBOBOX", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER |
+		CBS_DROPDOWN, 50, 100, 150, 200, hwnd, NULL, hInstance, NULL);
+	UNUSED(hComboDNS2);
+
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
+
 	while (GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
