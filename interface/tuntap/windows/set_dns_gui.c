@@ -53,7 +53,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     }
 	HWND hwnd;
 	hwnd = CreateWindowEx( WS_EX_CLIENTEDGE, main_window_name, "Set DNS", WS_OVERLAPPEDWINDOW,
-    CW_USEDEFAULT, CW_USEDEFAULT, 340, 220, NULL, NULL, hInstance, NULL );
+    CW_USEDEFAULT, CW_USEDEFAULT, 450, 220, NULL, NULL, hInstance, NULL );
 	
 	if(hwnd == NULL)
     {
@@ -61,12 +61,14 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
         return 1;
     }
 	HWND hComboDNS1 = CreateWindowEx(WS_EX_CLIENTEDGE, "COMBOBOX", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER |
-		CBS_DROPDOWN, 50, 50, 150, 200, hwnd, NULL, hInstance, NULL);
-	UNUSED(hComboDNS1);
+		CBS_DROPDOWN, 20, 40, 300, 200, hwnd, NULL, hInstance, NULL);
+	SendMessage(hComboDNS1, CB_ADDSTRING, 0,( LPARAM ) "fc5f:c567:102:c14e:326e:5035:d7e5:9f78");
+	SendMessage(hComboDNS1, CB_ADDSTRING, 0,( LPARAM ) "fc2f:22bf:e287:88ca:a896:896e:7e62:b411");
 
 	HWND hComboDNS2 = CreateWindowEx(WS_EX_CLIENTEDGE, "COMBOBOX", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER |
-		CBS_DROPDOWN, 50, 100, 150, 200, hwnd, NULL, hInstance, NULL);
-	UNUSED(hComboDNS2);
+		CBS_DROPDOWN, 20, 70, 300, 200, hwnd, NULL, hInstance, NULL);
+	SendMessage(hComboDNS2, CB_ADDSTRING, 0,( LPARAM ) "fc5f:c567:102:c14e:326e:5035:d7e5:9f78");
+	SendMessage(hComboDNS2, CB_ADDSTRING, 0,( LPARAM ) "fc2f:22bf:e287:88ca:a896:896e:7e62:b411");
 
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
