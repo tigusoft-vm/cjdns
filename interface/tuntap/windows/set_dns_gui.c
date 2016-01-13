@@ -1,3 +1,7 @@
+#include "interface/tuntap/windows/set_dns.h"
+#include "util/Linker.h"
+Linker_require("interface/tuntap/windows/set_dns.c")
+
 #include <windows.h>
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
@@ -5,23 +9,34 @@
 LPSTR main_window_name = "Main window";
 MSG msg;
 
-LRESULT CALLBACK WndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    switch( msg )
+    switch(msg)
     {
     case WM_CLOSE:
-        DestroyWindow( hwnd );
+        DestroyWindow(hwnd);
         break;
        
     case WM_DESTROY:
-        PostQuitMessage( 0 );
+        PostQuitMessage(0);
         break;
        
         default:
-        return DefWindowProc( hwnd, msg, wParam, lParam );
+        return DefWindowProc(hwnd, msg, wParam, lParam);
     }
    
     return 0;
+}
+
+LRESULT CALLBACK SetButtonProc(HWND hSetButton, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg)
+	{
+		case WM_LBUTTONDOWN:
+			set_dns_for_tun("", "");
+			return 0;
+	}
+	return 0;
 }
 
 WNDCLASSEX create_main_window(HINSTANCE hInstance)
@@ -53,13 +68,13 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     }
 	HWND hwnd;
 	hwnd = CreateWindowEx( WS_EX_CLIENTEDGE, main_window_name, "Set DNS", WS_OVERLAPPEDWINDOW,
-    CW_USEDEFAULT, CW_USEDEFAULT, 450, 220, NULL, NULL, hInstance, NULL );
-	
+    CW_USEDEFAULT, CW_USEDEFAULT, 450, 220, NULL, NULL, hInstance, NULL );	
 	if(hwnd == NULL)
     {
         MessageBox(NULL, "CreateWindowEx error", "", MB_ICONEXCLAMATION);
         return 1;
     }
+
 	HWND hComboDNS1 = CreateWindowEx(WS_EX_CLIENTEDGE, "COMBOBOX", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER |
 		CBS_DROPDOWN, 20, 40, 300, 200, hwnd, NULL, hInstance, NULL);
 	SendMessage(hComboDNS1, CB_ADDSTRING, 0,( LPARAM ) "fc5f:c567:102:c14e:326e:5035:d7e5:9f78");
@@ -70,6 +85,11 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	SendMessage(hComboDNS2, CB_ADDSTRING, 0,( LPARAM ) "fc5f:c567:102:c14e:326e:5035:d7e5:9f78");
 	SendMessage(hComboDNS2, CB_ADDSTRING, 0,( LPARAM ) "fc2f:22bf:e287:88ca:a896:896e:7e62:b411");
 
+	HWND hSetButton;
+	hSetButton = CreateWindowEx(0, "BUTTON", "Set DNS", WS_CHILD | WS_VISIBLE,
+		100, 100, 150, 30, hwnd, NULL, hInstance, NULL);
+	UNUSED(hSetButton);
+
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
 
@@ -79,6 +99,4 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
         DispatchMessage(&msg);
     }
     return msg.wParam;
-	
-    return 0;
 }
