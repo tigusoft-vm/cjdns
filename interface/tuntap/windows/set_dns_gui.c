@@ -22,7 +22,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
-       
+
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -33,17 +33,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			char dns2[MAX_IPV6_LEN];
             ComboBox_GetText(hComboDNS1, dns1, MAX_IPV6_LEN - 1);
 			ComboBox_GetText(hComboDNS2, dns2, MAX_IPV6_LEN - 1);
-			//int ret = set_dns_for_tun("fcb2:c452:926c:1488:434f:875f:4e31:fd40", "fcb2:c452:926c:1488:434f:875f:4e31:fd40");
 			int ret = set_dns_for_tun(dns1, dns2);
 			if (ret != 0)
 				MessageBox(hwnd, "ERROR", "", MB_ICONINFORMATION);
 		}
 		break;
-       
+
         default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }
-   
+
     return 0;
 }
 
@@ -65,9 +64,50 @@ WNDCLASSEX create_main_window(HINSTANCE hInstance)
 	return main_window;
 }
 
+// function from https://msdn.microsoft.com/en-us/library/aa376389%28v=VS.85%29.aspx
+BOOL IsUserAdmin(VOID)
+/*++
+Routine Description: This routine returns TRUE if the caller's
+process is a member of the Administrators local group. Caller is NOT
+expected to be impersonating anyone and is expected to be able to
+open its own process and process token.
+Arguments: None.
+Return Value:
+   TRUE - Caller has Administrators local group.
+   FALSE - Caller does not have Administrators local group. --
+*/
+{
+	BOOL b;
+	SID_IDENTIFIER_AUTHORITY NtAuthority = {SECURITY_NT_AUTHORITY};
+	PSID AdministratorsGroup;
+	b = AllocateAndInitializeSid(
+		&NtAuthority,
+		2,
+		SECURITY_BUILTIN_DOMAIN_RID,
+		DOMAIN_ALIAS_RID_ADMINS,
+		0, 0, 0, 0, 0, 0,
+		&AdministratorsGroup);
+	if(b)
+	{
+		if (!CheckTokenMembership( NULL, AdministratorsGroup, &b))
+		{
+			 b = FALSE;
+		}
+		FreeSid(AdministratorsGroup);
+	}
+	return(b);
+}
+
+
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
 {
 	FreeConsole();
+	if (!IsUserAdmin())
+	{
+		MessageBox(NULL, "Run me as administrator", "ERROR", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+
 	WNDCLASSEX main_window = create_main_window(hInstance);
     if(!RegisterClassEx(&main_window))
     {
@@ -76,7 +116,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     }
 	HWND hwnd;
 	hwnd = CreateWindowEx( WS_EX_CLIENTEDGE, main_window_name, "Set DNS", WS_OVERLAPPEDWINDOW,
-    CW_USEDEFAULT, CW_USEDEFAULT, 450, 220, NULL, NULL, hInstance, NULL );	
+    CW_USEDEFAULT, CW_USEDEFAULT, 450, 220, NULL, NULL, hInstance, NULL );
 	if(hwnd == NULL)
     {
         MessageBox(NULL, "CreateWindowEx error", "", MB_ICONEXCLAMATION);
