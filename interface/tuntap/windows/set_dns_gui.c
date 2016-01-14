@@ -9,6 +9,8 @@ Linker_require("interface/tuntap/windows/set_dns.c")
 LPSTR main_window_name = "Main window";
 MSG msg;
 
+HWND hSetButton;
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch(msg)
@@ -20,23 +22,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
+
+	case WM_COMMAND:
+		if ((HWND)lParam == hSetButton)
+			set_dns_for_tun("fcb2:c452:926c:1488:434f:875f:4e31:fd40", "fcb2:c452:926c:1488:434f:875f:4e31:fd40");
+			MessageBox( hwnd, "Nacisnięto przycisk!", "Komunikat", MB_ICONINFORMATION );
+		break;
        
         default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }
    
     return 0;
-}
-
-LRESULT CALLBACK SetButtonProc(HWND hSetButton, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch(msg)
-	{
-		case WM_LBUTTONDOWN:
-			set_dns_for_tun("", "");
-			return 0;
-	}
-	return 0;
 }
 
 WNDCLASSEX create_main_window(HINSTANCE hInstance)
@@ -85,7 +82,6 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	SendMessage(hComboDNS2, CB_ADDSTRING, 0,( LPARAM ) "fc5f:c567:102:c14e:326e:5035:d7e5:9f78");
 	SendMessage(hComboDNS2, CB_ADDSTRING, 0,( LPARAM ) "fc2f:22bf:e287:88ca:a896:896e:7e62:b411");
 
-	HWND hSetButton;
 	hSetButton = CreateWindowEx(0, "BUTTON", "Set DNS", WS_CHILD | WS_VISIBLE,
 		100, 100, 150, 30, hwnd, NULL, hInstance, NULL);
 	UNUSED(hSetButton);
