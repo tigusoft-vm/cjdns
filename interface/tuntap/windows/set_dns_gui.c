@@ -2,8 +2,9 @@
 #include "util/Linker.h"
 Linker_require("interface/tuntap/windows/set_dns.c")
 
-#include <windows.h>
 #include <windowsx.h>
+#include <winnls.h>
+#include <windows.h>
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 #define MAX_IPV6_LEN 41
@@ -104,7 +105,13 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	FreeConsole();
 	if (!IsUserAdmin())
 	{
-		MessageBox(NULL, "Run me as administrator", "ERROR", MB_ICONERROR | MB_OK);
+		if (GetUserDefaultUILanguage() == 1045)
+			MessageBoxW(NULL,
+				L"Musisz uruchomić ten program jako Administrator systemu Windows.\r\n\r\nKliknij ponownie na tym programie prawym klawiszem myszy i powinna tam być opcja 'Uruchom program jako administrator' lub 'Run as Admin' lub podobna, wybierz tą opcję.", L"ERROR", MB_ICONINFORMATION | MB_OK);
+		else
+			MessageBox(NULL,
+				"You must run this program as Administrator of Windows system.\r\n\r\nPlease click again on this program, with right-mouse-button and there should be option 'Run this as Admin' or such, select this option.", "ERROR", MB_ICONINFORMATION | MB_OK);
+
 		return 1;
 	}
 
