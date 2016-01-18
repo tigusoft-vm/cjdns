@@ -973,6 +973,7 @@ int InterfaceController_setUpLimitPeer(struct InterfaceController* ifController,
             struct Peer* peer = ici->peerMap.values[i];
             if (!Bits_memcmp(herPublicKey, peer->caSession->herPublicKey, 32)) {
                 peer->upLimitKbps = limitUp;
+                return 0;
             }
         }
     }

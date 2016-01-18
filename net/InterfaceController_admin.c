@@ -158,13 +158,13 @@ static void adminSetUpLimitPeer(Dict* args,
     uint8_t addr[16];
     int error = Key_parse(pubkeyString, pubkey, addr);
 
-    int64_t *limitUp = Dict_getInt(args, String_CONST("limitup"));
+    int64_t *limitUp = Dict_getInt(args, String_CONST("limitUp"));
     char* errorMsg = NULL;
     if (error) {
         errorMsg = "bad key";
     } else {
         //  set limit
-        error = InterfaceController_setUpLimitPeer(context->ic,pubkey,(uint32_t)*limitUp);
+        error = InterfaceController_setUpLimitPeer(context->ic,pubkey,*(uint32_t*)limitUp);
         if (error) {
             errorMsg = "no peer found for that key";
         }
@@ -234,6 +234,7 @@ void InterfaceController_admin_register(struct InterfaceController* ic,
 
     Admin_registerFunction("InterfaceController_adminSetUpLimitPeer", adminSetUpLimitPeer, ctx, true,
         ((struct Admin_FunctionArg[]) {
-            { .name = "pubkey", .required = 1, .type = "String" }
+            { .name = "pubkey", .required = 1, .type = "String" },
+            { .name = "limitUp", .required = 1, .type = "Int" }
         }), admin);
 }
