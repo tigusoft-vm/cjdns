@@ -158,12 +158,13 @@ static void adminSetUpLimitPeer(Dict* args,
     uint8_t addr[16];
     int error = Key_parse(pubkeyString, pubkey, addr);
 
+    int64_t *limitUp = Dict_getInt(args, String_CONST("limitup"));
     char* errorMsg = NULL;
     if (error) {
         errorMsg = "bad key";
     } else {
-        //  try to remove the peer if the key is valid
-        //error = InterfaceController_disconnectPeer(context->ic,pubkey);
+        //  set limit
+        error = InterfaceController_setUpLimitPeer(context->ic,pubkey,(uint32_t)*limitUp);
         if (error) {
             errorMsg = "no peer found for that key";
         }

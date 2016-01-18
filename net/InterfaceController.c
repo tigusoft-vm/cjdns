@@ -963,7 +963,7 @@ int InterfaceController_disconnectPeer(struct InterfaceController* ifController,
 }
 
 int InterfaceController_setUpLimitPeer(struct InterfaceController* ifController,
-                                       uint8_t herPublicKey[32])
+                                       uint8_t herPublicKey[32], uint32_t limitUp)
 {
     struct InterfaceController_pvt* ic =
         Identity_check((struct InterfaceController_pvt*) ifController);
@@ -972,7 +972,7 @@ int InterfaceController_setUpLimitPeer(struct InterfaceController* ifController,
         for (int i = 0; i < (int)ici->peerMap.count; i++) {
             struct Peer* peer = ici->peerMap.values[i];
             if (!Bits_memcmp(herPublicKey, peer->caSession->herPublicKey, 32)) {
-                // set new limit
+                peer->upLimitKbps = limitUp;
             }
         }
     }
