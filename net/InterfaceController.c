@@ -457,9 +457,14 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 {
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
+    struct PeerLink_Kbps kbps;
+    PeerLink_kbps(ep->peerLink, &kbps);
+    if (ep->upLimitKbps != 0 && kbps.sendKbps > ep->upLimitKbps)
+    {
+        return NULL;
+    }
 
     ep->bytesOut += msg->length;
-
     int msgs = PeerLink_send(msg, ep->peerLink);
 
     for (int i = 0; i < msgs; i++) {
@@ -844,6 +849,7 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
     ep->lladdr = lladdr;
     ep->ici = ici;
     ep->isIncomingConnection = false;
+    ep->upLimitKbps = 0;
     Bits_memcpyConst(ep->addr.key, herPublicKey, 32);
     Address_getPrefix(&ep->addr);
     Identity_set(ep);
@@ -959,14 +965,17 @@ int InterfaceController_disconnectPeer(struct InterfaceController* ifController,
 int InterfaceController_setUpLimitPeer(struct InterfaceController* ifController,
                                        uint8_t herPublicKey[32])
 {
-/*    struct InterfaceController_pvt* ic =
+    struct InterfaceController_pvt* ic =
         Identity_check((struct InterfaceController_pvt*) ifController);
     for (int j = 0; j < ic->icis->length; j++) {
         struct InterfaceController_Iface_pvt* ici = ArrayList_OfIfaces_get(ic->icis, j);
         for (int i = 0; i < (int)ici->peerMap.count; i++) {
             struct Peer* peer = ici->peerMap.values[i];
+            if (!Bits_memcmp(herPublicKey, peer->caSession->herPublicKey, 32)) {
+                // set new limit
+            }
         }
-    }*/
+    }
     return InterfaceController_setUpLimitPeer_NOTFOUND;
 }
 
