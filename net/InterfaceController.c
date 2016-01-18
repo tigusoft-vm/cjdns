@@ -406,6 +406,17 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
                                           struct Peer* ep,
                                           struct InterfaceController_pvt* ic)
 {
+    struct PeerLink_Kbps kbps;
+    PeerLink_kbps(ep->peerLink, &kbps);
+    if (kbps.recvKbps > ep->limit_down && ep->limit_down != 0)
+    {
+        printf("drop packet, current in speed: %u\n", (unsigned)kbps.recvKbps);
+        printf("limit for %s: %u\n",Address_toString(&ep->addr,ep->alloc)->bytes,
+                                    (unsigned)ep->limit_down);
+        return NULL;
+    }
+
+
     ep->bytesIn += msg->length;
 
     int caState = CryptoAuth_getState(ep->caSession);
@@ -465,8 +476,8 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
     PeerLink_kbps(ep->peerLink, &kbps);
     if (kbps.sendKbps > ep->limit_up && ep->limit_up != 0)
     {
-        printf("drop packet, current out speed: %u\n", kbps.sendKbps);
-        printf("limit: %u\n", ep->limit_up);
+        printf("drop packet, current out speed: %u\n", (unsigned)kbps.sendKbps);
+        printf("limit: %u\n", (unsigned)ep->limit_up);
         return NULL;
     }
     ep->bytesOut += msg->length;
@@ -830,7 +841,7 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
     int64_t* limit_down = Allocator_malloc(alloc,sizeof(int64_t));
     *limit_up = 0;
     *limit_down = 0;
-    InterfaceController_bootstrapPeer_l(ifc,
+    return InterfaceController_bootstrapPeer_l(ifc,
                                       interfaceNumber,
                                       herPublicKey,
                                       lladdr,

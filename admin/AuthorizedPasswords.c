@@ -41,14 +41,14 @@ static void add(Dict* args, void* vcontext, String* txid, struct Allocator* allo
     String* user = Dict_getString(args, String_CONST("user"));
     String* ipv6 = Dict_getString(args, String_CONST("ipv6"));
     // start -- <tiguwita>
-    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
-    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
-    if (!user) {
-        user = passwd;
-    }
-    printf("** After rpccall in fun userSpeed_limitation "
-           "upload speed:[%dkb/s], download speed:[%dkb/s] for user: [%s].\n",
-           (int)*limit_up, (int)*limit_down, user->bytes);
+    //int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    //int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+    //if (!user) {
+    //    user = passwd;
+    //}
+    //printf("** After rpccall in fun userSpeed_limitation "
+    //       "upload speed:[%dkb/s], download speed:[%dkb/s] for user: [%s].\n",
+    //       (int)*limit_up, (int)*limit_down, user->bytes);
     // end -- <tiguzegna>
     uint8_t ipv6Bytes[16];
     uint8_t* ipv6Arg;
