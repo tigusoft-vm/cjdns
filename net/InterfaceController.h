@@ -175,6 +175,15 @@ int InterfaceController_beaconState(struct InterfaceController* ifc,
 int InterfaceController_disconnectPeer(struct InterfaceController* ifc, uint8_t herPublicKey[32]);
 
 /**
+ * @param ic the if controller
+ * @param herPublicKey the public key of the foreign node
+ * @retrun 0 if all goes well.
+ *         InterfaceController_setUpLimitPeer_NOTFOUND if no peer with herPublicKey is found.
+ */
+#define InterfaceController_setUpLimitPeer_NOTFOUND -1
+int InterfaceController_setUpLimitPeer(struct InterfaceController* ifc, uint8_t herPublicKey[32]);
+
+/**
  * Get stats for the connected peers.
  *
  * @params ic the if controller
