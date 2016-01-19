@@ -896,6 +896,8 @@ int InterfaceController_bootstrapPeer_l(struct InterfaceController* ifc,
     ep->lladdr = lladdr;
     ep->ici = ici;
     ep->isIncomingConnection = false;
+    ep->limit_up = 0;
+    ep->limit_down = 0;
     Bits_memcpy(ep->addr.key, herPublicKey, 32);
     Address_getPrefix(&ep->addr);
     Identity_set(ep);
@@ -1022,6 +1024,24 @@ int InterfaceController_disconnectPeer(struct InterfaceController* ifController,
         }
     }
     return InterfaceController_disconnectPeer_NOTFOUND;
+}
+
+int InterfaceController_setUpLimitPeer(struct InterfaceController* ifController,
+                                       uint8_t herPublicKey[32], uint32_t limitUp)
+{
+    struct InterfaceController_pvt* ic =
+        Identity_check((struct InterfaceController_pvt*) ifController);
+    for (int j = 0; j < ic->icis->length; j++) {
+        struct InterfaceController_Iface_pvt* ici = ArrayList_OfIfaces_get(ic->icis, j);
+        for (int i = 0; i < (int)ici->peerMap.count; i++) {
+            struct Peer* peer = ici->peerMap.values[i];
+            if (!Bits_memcmp(herPublicKey, peer->caSession->herPublicKey, 32)) {
+                peer->limit_up = limitUp;
+                return 0;
+            }
+        }
+    }
+    return InterfaceController_setUpLimitPeer_NOTFOUND;
 }
 
 static Iface_DEFUN incomingFromEventEmitterIf(struct Message* msg, struct Iface* eventEmitterIf)

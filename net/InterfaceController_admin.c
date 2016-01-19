@@ -180,7 +180,7 @@ static void adminResetPeering(Dict* args,
 
     Admin_sendMessage(response, txid, context->admin);
 }*/
-/*
+
 static void adminSetUpLimitPeer(Dict* args,
                                 void* vcontext,
                                 String* txid,
@@ -214,7 +214,7 @@ static void adminSetUpLimitPeer(Dict* args,
 
     Admin_sendMessage(response, txid, context->admin);
 }
-*/
+
 /*
 static resetSession(Dict* args, void* vcontext, String* txid, struct Allocator* requestAlloc)
 {
@@ -266,5 +266,12 @@ void InterfaceController_admin_register(struct InterfaceController* ic,
     Admin_registerFunction("InterfaceController_disconnectPeer", adminDisconnectPeer, ctx, true,
         ((struct Admin_FunctionArg[]) {
             { .name = "pubkey", .required = 1, .type = "String" }
+        }), admin);
+
+    Admin_registerFunction("InterfaceController_adminSetUpLimitPeer",
+                           adminSetUpLimitPeer, ctx, true,
+        ((struct Admin_FunctionArg[]) {
+            { .name = "pubkey", .required = 1, .type = "String" },
+            { .name = "limitUp", .required = 1, .type = "Int" }
         }), admin);
 }
