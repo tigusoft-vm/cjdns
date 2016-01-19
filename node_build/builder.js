@@ -81,7 +81,6 @@ var expandArgs = function (args) {
 var sema = Semaphore.create(PROCESSORS);
 var compiler = function (compilerPath, args, callback, content) {
     args = expandArgs(args);
-		// if (compilerPath != "i686-w64-mingw32-gcc") throw "INVALID COMPILER PATH (test)"; // TODO(rfree)
     sema.take(function (returnAfter) {
         var gcc = Spawn(compilerPath, args);
         var err = '';
@@ -1054,9 +1053,7 @@ var configure = module.exports.configure = function (params, configFunc) {
             return;
         }
 
-/*
-TODO(rfree) the codestyle is getting in way of some tests; will clear them up later
-
+if (process.env['NO_CODESTYLE'] != '1') {
         debug("Checking codestyle");
 
         var sema = Semaphore.create(64);
@@ -1082,7 +1079,7 @@ TODO(rfree) the codestyle is getting in way of some tests; will clear them up la
                 }));
             }));
         });
-*/
+}
 
     }).nThen(function (waitFor) {
 

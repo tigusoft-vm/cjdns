@@ -49,6 +49,14 @@ static void beginConnection(Dict* args,
     uint32_t ifNum = (interfaceNumber) ? ((uint32_t) *interfaceNumber) : 0;
     String* peerName = Dict_getString(args, String_CONST("peerName"));
     String* error = NULL;
+    // start -- <tiguwita>
+    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+
+    Log_debug(ctx->logger, "** After rpccall in fun peerSpeed_limitation "
+              "upload speed:[%dkb/s], download speed:[%dkb/s] "
+              "for individual peer [%s]\n.", (int)*limit_up, (int)*limit_down, publicKey->bytes);
+    // end -- <tiguzegna>
 
     Log_debug(ctx->logger, "Peering with [%s]", publicKey->bytes);
 
@@ -86,8 +94,9 @@ static void beginConnection(Dict* args,
             Sockaddr_setPort(addr, Sockaddr_getPort(&ss.addr));
         }
 
-        int ret = InterfaceController_bootstrapPeer(
-            ctx->ic, ifNum, pkBytes, addr, password, login, peerName, ctx->alloc);
+        int ret = InterfaceController_bootstrapPeer_l(ctx->ic, ifNum, pkBytes, addr,
+                                                      password, login, peerName,
+                                                      limit_up, limit_down, ctx->alloc);
 
         Allocator_free(tempAlloc);
 
@@ -189,6 +198,19 @@ static void newInterface(Dict* args, void* vcontext, String* txid, struct Alloca
     }
     newInterface2(ctx, &addr.addr, txid, requestAlloc);
 }
+// start -- <tiguwita>
+// static void peerSpeed_limitation(Dict* args,
+//                                  void* vcontext,
+//                                 String* txid,
+//                                 struct Allocator* requestAlloc)
+//{
+//    struct Context* ctx = vcontext;
+//    int64_t* limit_up = Dict_getInt(args, String_CONST("limit_up"));
+//    int64_t* limit_down = Dict_getInt(args, String_CONST("limit_down"));
+//    printf("After rpccall in fun peerSpeed_limitation "
+//           "upload speed:[%dkb/s], download speed:[%dkb/s].", *limit_up, *limit_down);
+//}
+// end -- <tiguzegna>
 
 void UDPInterface_admin_register(struct EventBase* base,
                                  struct Allocator* alloc,
@@ -217,6 +239,16 @@ void UDPInterface_admin_register(struct EventBase* base,
             { .name = "password", .required = 0, .type = "String" },
             { .name = "publicKey", .required = 1, .type = "String" },
             { .name = "address", .required = 1, .type = "String" },
-            { .name = "login", .required = 0, .type = "String" }
+            { .name = "login", .required = 0, .type = "String" },
+            { .name = "limit_up", .required = 1, .type = "Int" },
+            { .name = "limit_down", .required = 1, .type = "Int" }
         }), admin);
+    // start -- <tiguwita>
+    //Admin_registerFunction("UDPInterface_peerSpeed_limitation", peerSpeed_limitation, ctx, true,
+    //    ((struct Admin_FunctionArg[]) {
+    //        { .name = "publicKey", .required = 1, .type = "String" },
+    //        { .name = "limit_up", .required = 0, .type = "Int" },
+    //        { .name = "limit_down", .required = 0, .type = "Int" }
+    //    }), admin);
+    // end -- <tiguzegna>
 }

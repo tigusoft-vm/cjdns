@@ -16,6 +16,7 @@
 #include "client/Configurator.h"
 #include "benc/String.h"
 #include "benc/Dict.h"
+#include "benc/serialization/standard/BencMessageWriter.h"
 #include "benc/Int.h"
 #include "benc/List.h"
 #include "memory/Allocator.h"
@@ -155,9 +156,45 @@ static void authorizedPasswords(List* list, struct Context* ctx)
         }
         //String* publicKey = Dict_getString(d, String_CONST("publicKey"));
         String* ipv6 = Dict_getString(d, String_CONST("ipv6"));
-        Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s].",
-            i, displayName->bytes);
+        Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s].", i, user->bytes);
         Dict *args = Dict_new(child);
+
+        // <tigu>
+        uint32_t upLimitKbps = Dict_getInt(d, String_CONST("max_speed_up"));
+        uint32_t downLimitKbps = Dict_getInt(d, String_CONST("max_speed_down"));
+
+        if (!upLimitKbps) {
+            upLimitKbps = Allocator_malloc(child,sizeof(uint32_t));
+            *upLimitKbps = 0;
+            Log_warn(ctx->logger, "No \"max_speed_up\" specified for password #[%d], "
+                                  "set 0-unlimited as default",i);
+        } else if (*upLimitKbps != 0) {
+            Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s] "
+                                  "with upload speed limitation set at [%ukb/s].",
+                     i, displayName->bytes, (unsigned)*upLimitKbps);
+        } else {
+            Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s] "
+                                  "with no upload speed limitation set %u.",
+                     i, displayName->bytes, (unsigned)*upLimitKbps);
+        }
+        if (!downLimitKbps) {
+            downLimitKbps = Allocator_malloc(child,sizeof(uint32_t));
+            *downLimitKbps = 0;
+            Log_warn(ctx->logger, "No \"max_speed_down\" specified for password #[%d], "
+                                  "set 0-unlimited as default",i);
+        } else if (*downLimitKbps != 0) {
+            Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s] "
+                                  "with download speed limitation set at [%ukb/s].",
+                     i, displayName->bytes, (unsigned)*downLimitKbps);
+        } else {
+            Log_info(ctx->logger, "Adding authorized password #[%d] for user [%s] "
+                                  "with no download speed limitation set %u.",
+                     i, displayName->bytes, (unsigned)*downLimitKbps);
+        }
+        Dict_putInt(args, String_CONST("upLimitKbps"), (int)*upLimitKbps, child);
+        Dict_putInt(args, String_CONST("downLimitKbps"), (int)*downLimitKbps, child);
+        // <tigu> end
+
         uint32_t i = 1;
         Dict_putInt(args, String_CONST("authType"), i, child);
         Dict_putString(args, String_CONST("password"), passwd, child);
@@ -211,7 +248,61 @@ static void udpInterface(Dict* config, struct Context* ctx)
                                                "is not a dictionary type.", key->bytes);
                     exit(-1);
                 }
-                Dict* value = entry->val->as.dictionary;
+                // <tigu>
+                Dict* all =  entry->val->as.dictionary;
+                Dict* value = Dict_new(perCallAlloc);
+                String* pub_d = Dict_getString(all, String_CONST("publicKey"));
+                String* pss_d = Dict_getString(all, String_CONST("password"));
+                String* peerName_d = Dict_getString(all, String_CONST("peerName"));
+
+                if ( ! pub_d ) {
+                    Log_warn(ctx->logger,
+                        "Skipping peer: missing publicKey for peer [%s]", key->bytes);
+                    entry = entry->next;
+                    continue;
+                }
+                if ( ! pss_d ) {
+                    Log_warn(ctx->logger,
+                        "Skipping peer: missing password for peer [%s]", key->bytes);
+                    entry = entry->next;
+                    continue;
+                }
+
+                // start -- <tiguwita>
+                uint32_t* upLimitKbps = Dict_getInt(all, String_CONST("max_speed_up"));
+                uint32_t* downLimitKbps = Dict_getInt(all, String_CONST("max_speed_down"));
+
+                if (!upLimitKbps) {
+                    upLimitKbps = Allocator_malloc(perCallAlloc,sizeof(int64_t));
+                    *upLimitKbps = 0;
+                    Log_warn(ctx->logger, "No \"max_speed_up\" specified for peer [%s], "
+                                          "set 0-unlimited as default",pub_d->bytes);
+                } else if (*upLimitKbps != 0) {
+                    Log_info(ctx->logger, "Upload speed limitation for peer [%s] set at [%ukb/s].",
+                             pub_d->bytes, (unsigned)*upLimitKbps);
+                } else {
+                    Log_info(ctx->logger, "No upload speed limitation for peer [%s] set at %u.",
+                             pub_d->bytes, (unsigned)*upLimitKbps);
+                }
+                if (!downLimitKbps) {
+                    downLimitKbps = Allocator_malloc(perCallAlloc,sizeof(int64_t));
+                    *downLimitKbps = 0;
+                    Log_warn(ctx->logger, "No \"max_speed_down\" specified for peer [%s], "
+                                          "set 0-unlimited as default",pub_d->bytes);
+                } else if (*downLimitKbps != 0) {
+                    Log_info(ctx->logger, "Download speed limitation for peer [%u] "
+                             "set at [%dkb/s].", pub_d->bytes, (unsigned)*downLimitKbps);
+                } else {
+                    Log_info(ctx->logger, "No download speed limitation for peer [%s] set at %u.",
+                             pub_d->bytes, (unsigned)*downLimitKbps);
+                }
+                Dict_putInt(value, String_CONST("upLimitKbps"), *upLimitKbps, perCallAlloc);
+                Dict_putInt(value, String_CONST("downLimitKbps"), *upLimitKbps, perCallAlloc);
+                Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
+                Dict_putString(value, String_CONST("password"), pss_d, perCallAlloc);
+                Dict_putString(value, String_CONST("peerName"), peerName_d, perCallAlloc);
+                // <tigu> end
+
                 Log_keys(ctx->logger, "Attempting to connect to node [%s].", key->bytes);
                 key = String_clone(key, perCallAlloc);
                 char* lastColon = CString_strrchr(key->bytes, ':');
@@ -235,6 +326,17 @@ static void udpInterface(Dict* config, struct Context* ctx)
                         entry = entry->next;
                         continue;
                     }
+                }
+                struct Allocator* child = Allocator_child(ctx->alloc);
+                struct Message* msg = Message_new(0, AdminClient_MAX_MESSAGE_SIZE + 256, child);
+                int r = BencMessageWriter_writeDictTry(value, msg, NULL);
+
+                const int max_reference_size = 298;
+                if (r != 0 || msg->length > max_reference_size) {
+                    Log_warn(ctx->logger, "Peer skipped:");
+                    Log_warn(ctx->logger, "Too long peer reference for [%s]", key->bytes);
+                    entry = entry->next;
+                    continue;
                 }
                 Dict_putInt(value, String_CONST("interfaceNumber"), ifNum, perCallAlloc);
                 Dict_putString(value, String_CONST("address"), key, perCallAlloc);

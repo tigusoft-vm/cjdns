@@ -141,7 +141,9 @@ struct Peer
     uint64_t bytesOut;
     uint64_t bytesIn;
 
-    uint32_t upLimitKbps;
+    /** variables for individual peer speed limitation */
+    int64_t limit_up;
+    int64_t limit_down;
 
     Identity
 };
@@ -402,6 +404,19 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
                                           struct Peer* ep,
                                           struct InterfaceController_pvt* ic)
 {
+    // not works
+/*
+    struct PeerLink_Kbps kbps;
+    PeerLink_kbps(ep->peerLink, &kbps);
+    if (kbps.recvKbps > ep->limit_down && ep->limit_down != 0)
+    {
+        printf("drop packet, current in speed: %u\n", (unsigned)kbps.recvKbps);
+        printf("limit for %s: %u\n",Address_toString(&ep->addr,ep->alloc)->bytes,
+                                    (unsigned)ep->limit_down);
+        return NULL;
+    }
+*/
+
     ep->bytesIn += msg->length;
 
     int caState = CryptoAuth_getState(ep->caSession);
@@ -459,11 +474,12 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
-    if (ep->upLimitKbps != 0 && kbps.sendKbps > ep->upLimitKbps)
+    if (kbps.sendKbps > ep->limit_up && ep->limit_up != 0)
     {
+        printf("drop packet, current out speed: %u\n", (unsigned)kbps.sendKbps);
+        printf("limit: %u\n", (unsigned)ep->limit_up);
         return NULL;
     }
-
     ep->bytesOut += msg->length;
 
     int msgs = PeerLink_send(msg, ep->peerLink);
@@ -617,13 +633,12 @@ static Iface_DEFUN handleUnexpectedIncoming(struct Message* msg,
 {
     struct InterfaceController_pvt* ic = ici->ic;
 
-    struct Allocator* epAlloc = Allocator_child(ici->alloc);
-
     struct Sockaddr* lladdr = (struct Sockaddr*) msg->bytes;
     Message_shift(msg, -lladdr->addrLen, NULL);
     if (msg->length < CryptoHeader_SIZE) {
         return NULL;
     }
+    struct Allocator* epAlloc = Allocator_child(ici->alloc);
     lladdr = Sockaddr_clone(lladdr, epAlloc);
 
     Assert_true(!((uintptr_t)msg->bytes % 4) && "alignment fault");
@@ -815,10 +830,38 @@ int InterfaceController_beaconState(struct InterfaceController* ifc,
 int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
                                       int interfaceNumber,
                                       uint8_t* herPublicKey,
+                                      const struct Sockaddr* lladdr,
+                                      String* password,
+                                      String* login,
+                                      String* displayName,
+                                      struct Allocator* alloc)
+{
+    /** set limits to zeros - unlimited */
+    int64_t* limit_up = Allocator_malloc(alloc,sizeof(int64_t));
+    int64_t* limit_down = Allocator_malloc(alloc,sizeof(int64_t));
+    *limit_up = 0;
+    *limit_down = 0;
+    return InterfaceController_bootstrapPeer_l(ifc,
+                                      interfaceNumber,
+                                      herPublicKey,
+                                      lladdr,
+                                      password,
+                                      login,
+                                      displayName,
+                                      limit_up,
+                                      limit_down,
+                                      alloc);
+}
+
+int InterfaceController_bootstrapPeer_l(struct InterfaceController* ifc,
+                                      int interfaceNumber,
+                                      uint8_t* herPublicKey,
                                       const struct Sockaddr* lladdrParm,
                                       String* password,
                                       String* login,
                                       String* user,
+                                      int64_t* limit_up,
+                                      int64_t* limit_down,
                                       struct Allocator* alloc)
 {
     struct InterfaceController_pvt* ic = Identity_check((struct InterfaceController_pvt*) ifc);
@@ -850,6 +893,8 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
     Assert_true(index >= 0);
     ep->alloc = epAlloc;
     ep->handle = ici->peerMap.handles[index];
+    ep->limit_up = *limit_up;
+    ep->limit_down = *limit_down;
     ep->lladdr = lladdr;
     ep->ici = ici;
     ep->isIncomingConnection = false;
