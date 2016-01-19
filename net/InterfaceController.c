@@ -591,6 +591,8 @@ static Iface_DEFUN handleBeacon(struct Message* msg, struct InterfaceController_
     int setIndex = Map_EndpointsBySockaddr_put(&lladdr, &ep, &ici->peerMap);
     ep->handle = ici->peerMap.handles[setIndex];
     ep->isIncomingConnection = true;
+    ep->limit_up = 0;
+    ep->limit_down = 0;
     Bits_memcpy(&ep->addr, &addr, sizeof(struct Address));
     Identity_set(ep);
     Allocator_onFree(epAlloc, closeInterface, ep);
@@ -647,6 +649,8 @@ static Iface_DEFUN handleUnexpectedIncoming(struct Message* msg,
     ep->ici = ici;
     ep->lladdr = lladdr;
     ep->alloc = epAlloc;
+    ep->limit_up = 0;
+    ep->limit_down = 0;
     ep->peerLink = PeerLink_new(ic->eventBase, epAlloc);
     struct CryptoHeader* ch = (struct CryptoHeader*) msg->bytes;
     ep->caSession = CryptoAuth_newSession(ic->ca, epAlloc, ch->publicKey, true, "outer");
