@@ -144,7 +144,43 @@ static void adminDisconnectPeer(Dict* args,
 
     Admin_sendMessage(response, txid, context->admin);
 }
+/*
+static void adminResetPeering(Dict* args,
+                              void* vcontext,
+                              String* txid,
+                              struct Allocator* requestAlloc)
+{
+    struct Context* context = Identity_check((struct Context*)vcontext);
+    String* pubkeyString = Dict_getString(args, String_CONST("pubkey"));
 
+    int error = 0;
+    char* errorMsg = NULL;
+
+    if (pubkeyString) {
+        // parse the key
+        uint8_t pubkey[32];
+        uint8_t addr[16];
+        error = Key_parse(pubkeyString, pubkey, addr);
+
+        if (error) {
+            errorMsg = "bad key";
+        } else {
+            InterfaceController_resetPeering(context->ic, pubkey);
+        }
+    } else {
+        // reset all
+        InterfaceController_resetPeering(context->ic, NULL);
+    }
+
+    Dict* response = Dict_new(requestAlloc);
+    Dict_putInt(response, String_CONST("success"), error ? 0 : 1, requestAlloc);
+    if (error) {
+        Dict_putString(response, String_CONST("error"), String_CONST(errorMsg), requestAlloc);
+    }
+
+    Admin_sendMessage(response, txid, context->admin);
+}*/
+/*
 static void adminSetUpLimitPeer(Dict* args,
                                 void* vcontext,
                                 String* txid,
@@ -178,7 +214,7 @@ static void adminSetUpLimitPeer(Dict* args,
 
     Admin_sendMessage(response, txid, context->admin);
 }
-
+*/
 /*
 static resetSession(Dict* args, void* vcontext, String* txid, struct Allocator* requestAlloc)
 {
@@ -230,11 +266,5 @@ void InterfaceController_admin_register(struct InterfaceController* ic,
     Admin_registerFunction("InterfaceController_disconnectPeer", adminDisconnectPeer, ctx, true,
         ((struct Admin_FunctionArg[]) {
             { .name = "pubkey", .required = 1, .type = "String" }
-        }), admin);
-
-    Admin_registerFunction("InterfaceController_adminSetUpLimitPeer", adminSetUpLimitPeer, ctx, true,
-        ((struct Admin_FunctionArg[]) {
-            { .name = "pubkey", .required = 1, .type = "String" },
-            { .name = "limitUp", .required = 1, .type = "Int" }
         }), admin);
 }

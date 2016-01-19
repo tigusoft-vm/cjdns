@@ -17,6 +17,7 @@
 #include "interface/tuntap/windows/TAPInterface.h"
 #include "interface/tuntap/TAPWrapper.h"
 #include "interface/tuntap/NDPServer.h"
+#include "interface/tuntap/ARPServer.h"
 #include "util/CString.h"
 
 struct Iface* TUNInterface_new(const char* interfaceName,
@@ -27,23 +28,13 @@ struct Iface* TUNInterface_new(const char* interfaceName,
                                    struct Except* eh,
                                    struct Allocator* alloc)
 {
-
-	//Log_critical(logger, "You are calling the function [%s] the creates TUN, but "
-    //"this code is disabled. Do not use tun (on windows?). Disable it in configuration!\n",
-    //__FUNCTION__ );
-	//return NULL; // TODO(rfree) fix this for new uv_device
-	
     struct TAPInterface* tap = TAPInterface_new(interfaceName, eh, logger, base, alloc);
     CString_strncpy(assignedInterfaceName, tap->assignedName, TUNInterface_IFNAMSIZ);
     if (isTapMode) { return &tap->generic; }
     struct TAPWrapper* tapWrapper = TAPWrapper_new(&tap->generic, logger, alloc);
     struct NDPServer* ndp =
         NDPServer_new(&tapWrapper->internal, logger, TAPWrapper_LOCAL_MAC, alloc);
-
-    // TODO(cjd): this is not right
-    ndp->advertisePrefix[0] = 0xfc;
-    ndp->prefixLen = 8;
-
-    return &ndp->internal;
-    
+    struct ARPServer* arp =
+        ARPServer_new(&ndp->internal, logger, TAPWrapper_LOCAL_MAC, alloc);
+    return &arp->internal;
 }
