@@ -194,7 +194,7 @@ static void adminSetUpLimitPeer(Dict* args,
     uint8_t addr[16];
     int error = Key_parse(pubkeyString, pubkey, addr);
 
-    int64_t *limitUp = Dict_getInt(args, String_CONST("limitUp"));
+    int64_t* limitUp = Dict_getInt(args, String_CONST("limitUp"));
     char* errorMsg = NULL;
     if (error) {
         errorMsg = "bad key";

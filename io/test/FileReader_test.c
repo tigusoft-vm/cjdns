@@ -30,10 +30,10 @@ int main()
     struct Random* rand = Random_new(alloc, NULL, NULL);
 
     FILE* tmp = tmpfile();
-	if (tmp == NULL)
-	{
-		tmp = fopen("tmptmp", "w+");
-	}
+    if (tmp == NULL)
+    {
+        tmp = fopen("tmptmp", "w+");
+    }
     uint8_t buffer1[2048];
     size_t checkSize;
     Random_bytes(rand, buffer1, 2048);

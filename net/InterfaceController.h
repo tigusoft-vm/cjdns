@@ -203,7 +203,8 @@ int InterfaceController_disconnectPeer(struct InterfaceController* ifc, uint8_t 
  *         InterfaceController_setUpLimitPeer_NOTFOUND if no peer with herPublicKey is found.
  */
 #define InterfaceController_setUpLimitPeer_NOTFOUND -1
-int InterfaceController_setUpLimitPeer(struct InterfaceController* ifc, uint8_t herPublicKey[32], uint32_t limitUp);
+int InterfaceController_setUpLimitPeer(struct InterfaceController* ifc, uint8_t herPublicKey[32],
+                                       uint32_t limitUp);
 
 /**
  * Get stats for the connected peers.
