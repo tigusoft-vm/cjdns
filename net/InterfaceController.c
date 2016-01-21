@@ -591,7 +591,7 @@ static Iface_DEFUN handleBeacon(struct Message* msg, struct InterfaceController_
     int setIndex = Map_EndpointsBySockaddr_put(&lladdr, &ep, &ici->peerMap);
     ep->handle = ici->peerMap.handles[setIndex];
     ep->isIncomingConnection = true;
-    ep->limit_up = -1;
+    ep->limit_up = 0;
     ep->limit_down = -1;
     Bits_memcpy(&ep->addr, &addr, sizeof(struct Address));
     Identity_set(ep);
@@ -900,8 +900,6 @@ int InterfaceController_bootstrapPeer_l(struct InterfaceController* ifc,
     ep->lladdr = lladdr;
     ep->ici = ici;
     ep->isIncomingConnection = false;
-    ep->limit_up = -1;
-    ep->limit_down = -1;
     Bits_memcpy(ep->addr.key, herPublicKey, 32);
     Address_getPrefix(&ep->addr);
     Identity_set(ep);
