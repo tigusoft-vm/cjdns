@@ -16,6 +16,7 @@
 #define Message_H
 
 #include "exception/Except.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "memory/Allocator.h"
@@ -37,6 +38,8 @@ struct Message
     /** Amount of bytes of storage space available in the message. */
     int32_t capacity;
 
+    /** bool, true if message from tun interface */
+    int8_t my_message;
     #ifdef PARANOIA
         /** This is used inside of Iface.h to support Iface_next() */
         struct Iface* currentIface;
@@ -64,6 +67,7 @@ static inline struct Message* Message_new(uint32_t messageLength,
     out->bytes = &buff[amountOfPadding];
     out->length = out->capacity = messageLength;
     out->padding = amountOfPadding;
+    out->my_message = false;
     out->alloc = alloc;
     return out;
 }
@@ -82,7 +86,8 @@ static inline struct Message* Message_clone(struct Message* toClone, struct Allo
         .padding = toClone->padding,
         .bytes = allocation + toClone->padding,
         .capacity = toClone->capacity,
-        .alloc = alloc
+        .alloc = alloc,
+        .my_message = toClone->my_message
     }));
 }
 
@@ -100,6 +105,7 @@ static inline void Message_copyOver(struct Message* output,
     output->bytes = allocation + input->padding;
     output->length = input->length;
     output->padding = input->padding;
+    output->my_message = input->my_message;
 }
 
 /**

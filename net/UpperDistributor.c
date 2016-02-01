@@ -40,6 +40,7 @@ static Iface_DEFUN incomingFromEventIf(struct Message* msg, struct Iface* eventI
 
 static Iface_DEFUN incomingFromTunAdapterIf(struct Message* msg, struct Iface* tunAdapterIf)
 {
+    msg->my_message = true;
     struct UpperDistributor_pvt* ud =
         Identity_containerOf(tunAdapterIf, struct UpperDistributor_pvt, pub.tunAdapterIf);
     return Iface_next(&ud->pub.sessionManagerIf, msg);

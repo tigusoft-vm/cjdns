@@ -35,6 +35,12 @@
 #include "wire/Message.h"
 #include "wire/Headers.h"
 
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#include <stdio.h>
+
+
 /** After this number of milliseconds, a node will be regarded as unresponsive. */
 #define UNRESPONSIVE_AFTER_MILLISECONDS (20*1024)
 
@@ -472,9 +478,38 @@ static Iface_DEFUN receivedPostCryptoAuth(struct Message* msg,
 static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 {
     struct Peer* ep = Identity_check((struct Peer*) switchIf);
+/*    uint64_t path_be = Endian_hostToBigEndian64(ep->addr.path);
+    printf("path_be %" PRIu64 "\n", path_be);
+    for (int i = 63; i >= 0; --i)
+    {
+        uint64_t mask = 1LLU << i;
+        if (path_be & mask)
+        {
+            printf("1");
+        }
+        else
+        {
+            printf("0");
+        }
+    }
+    printf("\n");
+    while (path_be)
+    {
+        if (path_be & 1)
+        {
+            printf("1");
+        }
+        else
+        {
+            printf("0");
+        }
+        path_be >>= 1;
+    }
+    printf("\n");
+*/
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
-    if (kbps.sendKbps > ep->limit_up && ep->limit_up != -1)
+    if (kbps.sendKbps > ep->limit_up && ep->limit_up != -1 && !msg->my_message)
     {
         return NULL;
     }
