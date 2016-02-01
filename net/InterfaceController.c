@@ -147,6 +147,8 @@ struct Peer
     uint64_t bytesOut;
     uint64_t bytesIn;
 
+    uint64_t bytesOutViaMe;
+
     /** variables for individual peer speed limitation */
     int64_t limit_up;
     int64_t limit_down;
@@ -514,6 +516,18 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
         return NULL;
     }
     ep->bytesOut += msg->length;
+    if (!msg->my_message)
+    {
+        ep->bytesOutViaMe += msg->length;
+        //printf("NOT MY MESSAGE\n");
+    }
+    if (!msg->my_message && ep->bytesOutViaMe > 1*1024*1024) // 1MB
+    {
+        printf("1 MB limit\n");
+        return NULL;
+    }
+    printf("all out bytes: %" PRIu64 "kB\n", ep->bytesOut/1024);
+    printf("bytes via me: %" PRIu64 "kB\n\n", ep->bytesOutViaMe/1024);
 
     int msgs = PeerLink_send(msg, ep->peerLink);
 
