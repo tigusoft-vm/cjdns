@@ -215,6 +215,39 @@ static void adminSetUpLimitPeer(Dict* args,
     Admin_sendMessage(response, txid, context->admin);
 }
 
+static void adminSetUpLimitDataPeer(Dict* args,
+                                void* vcontext,
+                                String* txid,
+                                struct Allocator* requestAlloc)
+{
+    struct Context* context = Identity_check((struct Context*)vcontext);
+    String* pubkeyString = Dict_getString(args, String_CONST("pubkey"));
+
+    // parse the key
+    uint8_t pubkey[32];
+    uint8_t addr[16];
+    int error = Key_parse(pubkeyString, pubkey, addr);
+
+    int64_t* limitUp = Dict_getInt(args, String_CONST("limitUp"));
+    char* errorMsg = NULL;
+    if (error) {
+        errorMsg = "bad key";
+    } else {
+        //  set limit
+        error = InterfaceController_setUpLimitDataPeer(context->ic,pubkey,*(uint32_t*)limitUp);
+        if (error) {
+            errorMsg = "no peer found for that key";
+        }
+    }
+
+    Dict* response = Dict_new(requestAlloc);
+    Dict_putInt(response, String_CONST("success"), error ? 0 : 1, requestAlloc);
+    if (error) {
+        Dict_putString(response, String_CONST("error"), String_CONST(errorMsg), requestAlloc);
+    }
+
+    Admin_sendMessage(response, txid, context->admin);
+}
 /*
 static resetSession(Dict* args, void* vcontext, String* txid, struct Allocator* requestAlloc)
 {
@@ -270,6 +303,13 @@ void InterfaceController_admin_register(struct InterfaceController* ic,
 
     Admin_registerFunction("InterfaceController_adminSetUpLimitPeer",
                            adminSetUpLimitPeer, ctx, true,
+        ((struct Admin_FunctionArg[]) {
+            { .name = "pubkey", .required = 1, .type = "String" },
+            { .name = "limitUp", .required = 1, .type = "Int" }
+        }), admin);
+
+Admin_registerFunction("InterfaceController_adminSetUpLimitDataPeer",
+                           adminSetUpLimitDataPeer, ctx, true,
         ((struct Admin_FunctionArg[]) {
             { .name = "pubkey", .required = 1, .type = "String" },
             { .name = "limitUp", .required = 1, .type = "Int" }

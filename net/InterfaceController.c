@@ -148,6 +148,7 @@ struct Peer
     uint64_t bytesIn;
 
     uint64_t bytesOutViaMe;
+    int64_t bytesOutLimit; ///< limit in bytes, 0 == unlimitetd
 
     /** variables for individual peer speed limitation */
     int64_t limit_up;
@@ -521,14 +522,20 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
         ep->bytesOutViaMe += msg->length;
         //printf("NOT MY MESSAGE\n");
     }
-    if (!msg->my_message && ep->bytesOutViaMe > 1*1024*1024) // 1MB
+    if (ep->bytesOutLimit != 0)
     {
-        printf("1 MB limit\n");
-        return NULL;
+        if (!msg->my_message && ep->bytesOutViaMe > (uint64_t)ep->bytesOutLimit)
+        {
+            /*printf("data limit\n");
+            printf("current limit: %"  PRId64, ep->bytesOutLimit);
+            printf("send data");*/
+            return NULL;
+        }
     }
-    printf("all out bytes: %" PRIu64 "kB\n", ep->bytesOut/1024);
+    /*printf("all out bytes: %" PRIu64 "kB\n", ep->bytesOut/1024);
     printf("bytes via me: %" PRIu64 "kB\n\n", ep->bytesOutViaMe/1024);
-
+    printf("bytesOutLimit: %" PRId64 "\n", ep->bytesOutLimit);
+*/
     int msgs = PeerLink_send(msg, ep->peerLink);
 
     for (int i = 0; i < msgs; i++) {
@@ -640,7 +647,7 @@ static Iface_DEFUN handleBeacon(struct Message* msg, struct InterfaceController_
     int setIndex = Map_EndpointsBySockaddr_put(&lladdr, &ep, &ici->peerMap);
     ep->handle = ici->peerMap.handles[setIndex];
     ep->isIncomingConnection = true;
-    ep->limit_up = 0;
+    ep->limit_up = -1;
     ep->limit_down = -1;
     Bits_memcpy(&ep->addr, &addr, sizeof(struct Address));
     Identity_set(ep);
@@ -1093,6 +1100,24 @@ int InterfaceController_setUpLimitPeer(struct InterfaceController* ifController,
         }
     }
     return InterfaceController_setUpLimitPeer_NOTFOUND;
+}
+
+int InterfaceController_setUpLimitDataPeer(struct InterfaceController* ifController,
+                                       uint8_t herPublicKey[32], uint32_t limitUp)
+{
+    struct InterfaceController_pvt* ic =
+        Identity_check((struct InterfaceController_pvt*) ifController);
+    for (int j = 0; j < ic->icis->length; j++) {
+        struct InterfaceController_Iface_pvt* ici = ArrayList_OfIfaces_get(ic->icis, j);
+        for (int i = 0; i < (int)ici->peerMap.count; i++) {
+            struct Peer* peer = ici->peerMap.values[i];
+            if (!Bits_memcmp(herPublicKey, peer->caSession->herPublicKey, 32)) {
+                peer->bytesOutLimit = limitUp * 1024; // limitUp kB
+                return 0;
+            }
+        }
+    }
+    return InterfaceController_setUpLimitDataPeer_NOTFOUND;
 }
 
 static Iface_DEFUN incomingFromEventEmitterIf(struct Message* msg, struct Iface* eventEmitterIf)

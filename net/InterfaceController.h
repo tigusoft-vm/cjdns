@@ -207,6 +207,17 @@ int InterfaceController_setUpLimitPeer(struct InterfaceController* ifc, uint8_t 
                                        uint32_t limitUp);
 
 /**
+ * @param ic the if controller
+ * @param herPublicKey the public key of the foreign node
+ * @retrun 0 if all goes well.
+ *         InterfaceController_setUpLimitDataPeer_NOTFOUND if no peer with herPublicKey is found.
+ */
+#define InterfaceController_setUpLimitDataPeer_NOTFOUND -1
+int InterfaceController_setUpLimitDataPeer(struct InterfaceController* ifc,
+                                       uint8_t herPublicKey[32],
+                                       uint32_t limitUp);
+
+/**
  * Get stats for the connected peers.
  *
  * @params ic the if controller
