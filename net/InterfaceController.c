@@ -512,7 +512,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 */
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
-    if (kbps.sendKbps > ep->limit_up && ep->limit_up != -1 && !msg->my_message)
+    if ((kbps.sendKbps > ep->limit_up) && (ep->limit_up != -1) && !msg->my_message)
     {
         return NULL;
     }
@@ -647,8 +647,8 @@ static Iface_DEFUN handleBeacon(struct Message* msg, struct InterfaceController_
     int setIndex = Map_EndpointsBySockaddr_put(&lladdr, &ep, &ici->peerMap);
     ep->handle = ici->peerMap.handles[setIndex];
     ep->isIncomingConnection = true;
-    ep->limit_up = -1;
-    ep->limit_down = -1;
+    ep->limit_up = 0;
+    ep->limit_down = 0;
     Bits_memcpy(&ep->addr, &addr, sizeof(struct Address));
     Identity_set(ep);
     Allocator_onFree(epAlloc, closeInterface, ep);
@@ -705,8 +705,8 @@ static Iface_DEFUN handleUnexpectedIncoming(struct Message* msg,
     ep->ici = ici;
     ep->lladdr = lladdr;
     ep->alloc = epAlloc;
-    ep->limit_up = -1;
-    ep->limit_down = -1;
+    ep->limit_up = 0;
+    ep->limit_down = 0;
     ep->peerLink = PeerLink_new(ic->eventBase, epAlloc);
     struct CryptoHeader* ch = (struct CryptoHeader*) msg->bytes;
     ep->caSession = CryptoAuth_newSession(ic->ca, epAlloc, ch->publicKey, true, "outer");
@@ -897,8 +897,8 @@ int InterfaceController_bootstrapPeer(struct InterfaceController* ifc,
     /** set limits to zeros - unlimited */
     int64_t* limit_up = Allocator_malloc(alloc,sizeof(int64_t));
     int64_t* limit_down = Allocator_malloc(alloc,sizeof(int64_t));
-    *limit_up = -1;
-    *limit_down = -1;
+    *limit_up = 0;
+    *limit_down = 0;
     return InterfaceController_bootstrapPeer_l(ifc,
                                       interfaceNumber,
                                       herPublicKey,
@@ -953,6 +953,8 @@ int InterfaceController_bootstrapPeer_l(struct InterfaceController* ifc,
     ep->handle = ici->peerMap.handles[index];
     ep->limit_up = *limit_up;
     ep->limit_down = *limit_down;
+    printf("set limit up to %" PRId64"\n", *limit_up);
+    printf("set limit down to %" PRId64"\n", *limit_down);
     ep->lladdr = lladdr;
     ep->ici = ici;
     ep->isIncomingConnection = false;
