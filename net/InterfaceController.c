@@ -512,8 +512,10 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
 */
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
-    printf("up limit %"PRId64"\n", ep->limit_up);
-    printf("current speed %d"PRId64"\n", kbps.sendKbps);
+    if (ep->limit_up != 0) {
+        printf("up limit %"PRId64"\n", ep->limit_up);
+        printf("current speed %d"PRIu64"\n", kbps.sendKbps);
+    }
     if ((kbps.sendKbps > ep->limit_up) && (ep->limit_up != -1) && !msg->my_message)
     {
         printf("DROP PACKET\n");
