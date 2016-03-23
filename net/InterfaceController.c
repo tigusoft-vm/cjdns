@@ -525,6 +525,7 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
         ep->bytesOutViaMe += msg->length;
         //printf("NOT MY MESSAGE\n");
     }
+    ep->bytesOutLimit = 0; // disable limit
     if (ep->bytesOutLimit != 0)
     {
         if (!msg->my_message && ep->bytesOutViaMe > (uint64_t)ep->bytesOutLimit)
