@@ -518,7 +518,10 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
     }
     if ((kbps.sendKbps > ep->limit_up) && (ep->limit_up != -1) && !msg->my_message)
     {
-        printf("DROP PACKET\n");
+        printf("***DROP PACKET***\n");
+        printf("limit %"PRId64"\n", ep->limit_up);
+        printf("current speed %d"PRIu64"\n", kbps.sendKbps);
+        printf("my_message %d\n", msg->my_message);
         return NULL;
     }
     ep->bytesOut += msg->length;
