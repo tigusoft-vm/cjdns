@@ -22,6 +22,7 @@
 #include "net/InterfaceController.h"
 #include "net/InterfaceController_admin.h"
 #include "util/AddrTools.h"
+#include <stdio.h>
 
 struct Context
 {
@@ -201,6 +202,7 @@ static void adminSetUpLimitPeer(Dict* args,
     } else {
         //  set limit
         error = InterfaceController_setUpLimitPeer(context->ic,pubkey,*(uint32_t*)limitUp);
+        printf("set limit to %d\n", *(uint32_t*)limitUp);
         if (error) {
             errorMsg = "no peer found for that key";
         }
