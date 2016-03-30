@@ -25,7 +25,8 @@ Cjdns.connectAsAnon(function (cjdns) {
             ret.peers.forEach(function (peer) {
                 p = peer['addr'] + ' ' + peer['state'] +
                     ' in ' + peer['recvKbps'] + 'kb/s' +
-                    ' out ' + peer['sendKbps'] + 'kb/s';
+                    ' out ' + peer['sendKbps'] + 'kb/s' +
+                    ' (limit ' + peer['limitUp'] + ')';
 
                     if (Number(peer['duplicates']) !== 0) {
                         p += ' ' + ' DUP ' + peer['duplicates'];

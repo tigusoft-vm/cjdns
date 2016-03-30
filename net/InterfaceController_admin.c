@@ -57,6 +57,7 @@ static void adminPeerStats(Dict* args, void* vcontext, String* txid, struct Allo
 
     String* recvKbps = String_CONST("recvKbps");
     String* sendKbps = String_CONST("sendKbps");
+    String* limitUp = String_CONST("limitUp");
 
     String* duplicates = String_CONST("duplicates");
     String* lostPackets = String_CONST("lostPackets");
@@ -70,6 +71,8 @@ static void adminPeerStats(Dict* args, void* vcontext, String* txid, struct Allo
 
         Dict_putInt(d, recvKbps, stats[i].recvKbps, alloc);
         Dict_putInt(d, sendKbps, stats[i].sendKbps, alloc);
+
+        Dict_putInt(d, limitUp, stats[i].limitUp, alloc);
 
         Dict_putString(d, addr, Address_toString(&stats[i].addr, alloc), alloc);
         Dict_putString(d, pubKey, Key_stringify(stats[i].addr.key, alloc), alloc);

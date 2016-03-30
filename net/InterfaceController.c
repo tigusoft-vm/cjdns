@@ -513,16 +513,31 @@ static Iface_DEFUN sendFromSwitch(struct Message* msg, struct Iface* switchIf)
     struct PeerLink_Kbps kbps;
     PeerLink_kbps(ep->peerLink, &kbps);
     if (ep->limit_up != 0) {
-        printf("up limit %"PRId64"\n", ep->limit_up);
-        printf("current speed %d"PRIu64"\n", kbps.sendKbps);
+        //printf("up limit %"PRId64"\n", ep->limit_up);
+        //printf("current speed %d"PRIu64"\n", kbps.sendKbps);
     }
+    static int stats_send = 0;
+    static int stats_drop = 0;
+
     if ((kbps.sendKbps > ep->limit_up) && (ep->limit_up != -1) && !msg->my_message)
     {
-        printf("***DROP PACKET***\n");
-        printf("limit %"PRId64"\n", ep->limit_up);
-        printf("current speed %d"PRIu64"\n", kbps.sendKbps);
-        printf("my_message %d\n", msg->my_message);
+        stats_drop++;
+        if (stats_drop % 1000000)
+        {
+            printf("***DROP PACKET***\n");
+            printf("limit %"PRId64"\n", ep->limit_up);
+            printf("current speed %d"PRIu64"\n", kbps.sendKbps);
+            printf("my_message %d\n", msg->my_message);
+        }
         return NULL;
+    }
+        stats_send++;
+    if (stats_send%1000000)
+    {
+        printf("***send***\n");
+        printf("limit %"PRId64"\n", ep->limit_up);
+            printf("current speed %d"PRIu64"\n", kbps.sendKbps);
+            printf("my_message %d\n", msg->my_message);
     }
     ep->bytesOut += msg->length;
     if (!msg->my_message)
@@ -1050,6 +1065,8 @@ int InterfaceController_getPeerStats(struct InterfaceController* ifController,
             PeerLink_kbps(peer->peerLink, &kbps);
             s->sendKbps = kbps.sendKbps;
             s->recvKbps = kbps.recvKbps;
+
+            s->limitUp = peer->limit_up;
         }
     }
 

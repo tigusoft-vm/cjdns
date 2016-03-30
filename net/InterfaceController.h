@@ -90,6 +90,7 @@ struct InterfaceController_PeerStats
 
     uint32_t sendKbps;
     uint32_t recvKbps;
+    int64_t limitUp;
 };
 
 struct InterfaceController
