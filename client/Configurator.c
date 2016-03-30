@@ -269,21 +269,26 @@ static void udpInterface(Dict* config, struct Context* ctx)
                 }
 
                 // start -- <tiguwita>
-                uint32_t* upLimitKbps = (uint32_t *)Dict_getInt(all, String_CONST("max_speed_up"));
+                Log_info(ctx->logger, "get limit for peer %s", pub_d->bytes);
+                String* peerLimitUpStr = Dict_getString(all, String_CONST("max_speed_up"));
+                uint32_t upLimitKbps = atol(peerLimitUpStr->bytes);
+
+              //uint32_t* upLimitKbps = (uint32_t *)Dict_getInt(all, String_CONST("max_speed_up"));
                 uint32_t* downLimitKbps = (uint32_t *)Dict_getInt(all,
                                                                   String_CONST("max_speed_down"));
 
-                if (!upLimitKbps) {
+/*                if (!upLimitKbps) {
                     upLimitKbps = Allocator_malloc(perCallAlloc,sizeof(int64_t));
                     *upLimitKbps = 0;
                     Log_warn(ctx->logger, "No \"max_speed_up\" specified for peer [%s], "
                                           "set 0-unlimited as default",pub_d->bytes);
-                } else if (*upLimitKbps != 0) {
+                } else if (*upLimitKbps != 0) {*/
+                  if (upLimitKbps != 0) {
                     Log_info(ctx->logger, "Upload speed limitation for peer [%s] set at [%ukb/s].",
-                             pub_d->bytes, (unsigned)*upLimitKbps);
+                             pub_d->bytes, (unsigned)upLimitKbps);
                 } else {
                     Log_info(ctx->logger, "No upload speed limitation for peer [%s] set at %u.",
-                             pub_d->bytes, (unsigned)*upLimitKbps);
+                             pub_d->bytes, (unsigned)upLimitKbps);
                 }
                 if (!downLimitKbps) {
                     downLimitKbps = Allocator_malloc(perCallAlloc,sizeof(int64_t));
@@ -297,8 +302,8 @@ static void udpInterface(Dict* config, struct Context* ctx)
                     //Log_info(ctx->logger, "No download speed limitation for peer [%s] set at %u.",
                     //         pub_d->bytes, (unsigned)*downLimitKbps);
                 }
-                Dict_putInt(value, String_CONST("upLimitKbps"), *upLimitKbps, perCallAlloc);
-                Dict_putInt(value, String_CONST("downLimitKbps"), *upLimitKbps, perCallAlloc);
+                Dict_putInt(value, String_CONST("upLimitKbps"), upLimitKbps, perCallAlloc);
+                Dict_putInt(value, String_CONST("downLimitKbps"), *downLimitKbps, perCallAlloc);
                 Dict_putString(value, String_CONST("publicKey"), pub_d, perCallAlloc);
                 Dict_putString(value, String_CONST("password"), pss_d, perCallAlloc);
                 Dict_putString(value, String_CONST("peerName"), peerName_d, perCallAlloc);
